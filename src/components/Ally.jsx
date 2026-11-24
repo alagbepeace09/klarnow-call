@@ -43,8 +43,8 @@ export default function Ally({ shape = 'circle', tile, size = 64, radius = 14, l
       <g fill="#ffffff" stroke="#111111" strokeWidth="5.5" strokeLinejoin="round">{s.body}</g>
       {s.eyes.map(([x, y], i) => (
         <g key={i} transform={'translate(' + (x + look) + ' ' + y + ')'}>
-          <ellipse rx="3.9" ry="5.4" fill="#111111" />
-          <ellipse cx="1.7" cy="-.2" rx="2.4" ry="4.1" fill="#ffffff" />
+          <ellipse rx="4.4" ry="6" fill="#111111" />
+          <ellipse cx="2.9" cy="-.4" rx="1.9" ry="4" fill="#ffffff" />
         </g>
       ))}
     </svg>

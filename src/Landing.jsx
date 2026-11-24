@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
 import { SummaryCard } from './Flow.jsx';
-import HeroKlaro, { KLARO_RENDER } from './components/HeroKlaro.jsx';
+import HeroKlaro, { KlaroRender } from './components/HeroKlaro.jsx';
 import Ally, { CALLERS } from './components/Ally.jsx';
 import { PRESETS, validUrl, sampleScript, speak, stopSpeech } from './data.js';
 
@@ -251,7 +251,7 @@ function SampleCall() {
           <div className="lp-listen-script" aria-live="polite">
             {shown.map((l, i) => (
               <div key={i} className={'lp-line-row ' + l.who}>
-                <span className="lp-av">{l.who === 'k' ? <img src={KLARO_RENDER} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', background: '#1b1530' }} /> : <Ally shape="circle" tile="violet" size={34} radius={10} />}</span>
+                <span className="lp-av">{l.who === 'k' ? <span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%', background: '#1b1530' }}><KlaroRender fallbackSize={34} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /></span> : <Ally shape="circle" tile="violet" size={34} radius={10} />}</span>
                 <div className={'kc-line ' + l.who}><small>{l.who === 'k' ? 'Klaro' : 'Caller · Sam'}</small>{l.text}</div>
               </div>
             ))}
@@ -616,7 +616,7 @@ function Callers() {
               <Ally shape={c.shape} tile={c.tile} size={100} radius={16} look={c.look * 3} />
             </div>
           ))}
-          <div className="lp-wall-klaro" style={{ gridRow: '2 / span 2', gridColumn: '3 / span 2' }}><span className="tag"><i />Klaro answering</span><img src={KLARO_RENDER} alt="Klaro answering calls" /></div>
+          <div className="lp-wall-klaro" style={{ gridRow: '2 / span 2', gridColumn: '3 / span 2' }}><span className="tag"><i />Klaro answering</span><KlaroRender alt="Klaro answering calls" fallbackSize={150} /></div>
         </Reveal>
       </div>
     </section>

@@ -9,6 +9,12 @@ export const KLARO_RENDER = 'https://www.klarnow.co.uk/images/call/klarnow-call-
  * the line drops from the top of the page, lands behind Klaro, then rolls
  * around him as a glowing orbit. A bright comet keeps travelling the orbit.
  */
+export function KlaroRender({ alt = '', fallbackSize = 120, ...rest }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <Klaro mood="welcome" size={fallbackSize} decorative={!alt} />;
+  return <img src={KLARO_RENDER} alt={alt} onError={() => setFailed(true)} draggable="false" {...rest} />;
+}
+
 export default function HeroKlaro({ size = 460, id = 'hk', children, beamFrom = -520 }) {
   const [failed, setFailed] = useState(false);
   const g = id; // unique ids for gradients/filters
@@ -22,12 +28,12 @@ export default function HeroKlaro({ size = 460, id = 'hk', children, beamFrom = 
 
   const Defs = () => (
     <defs>
-      <linearGradient id={g + '-beam'} x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <linearGradient id={g + '-beam'} x1={cx} y1={beamFrom} x2={cx} y2={top} gradientUnits="userSpaceOnUse">
         <stop offset="0" stopColor="#b9aaff" stopOpacity="0" />
         <stop offset=".55" stopColor="#845aee" stopOpacity=".85" />
         <stop offset="1" stopColor="#d9ccff" stopOpacity="1" />
       </linearGradient>
-      <linearGradient id={g + '-ring'} x1="0" y1="0" x2="1" y2="0">
+      <linearGradient id={g + '-ring'} x1={cx - rx} y1={cy} x2={cx + rx} y2={cy} gradientUnits="userSpaceOnUse">
         <stop offset="0" stopColor="#845aee" />
         <stop offset=".5" stopColor="#b9aaff" />
         <stop offset=".78" stopColor="#c9f04d" />

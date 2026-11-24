@@ -341,10 +341,11 @@ body { margin: 0; background: #fff; }
 .hk-comet { stroke: #c9f04d; stroke-width: 6; stroke-dasharray: .07 .93; stroke-dashoffset: 0; opacity: 0; animation: hk-orbit 3.4s linear 3.1s infinite, hk-in .6s ease 3.1s forwards; }
 .hk-flash { fill: #b9aaff; opacity: 0; transform-box: fill-box; transform-origin: center; animation: hk-flash 1.2s ease-out 1.4s forwards; filter: blur(6px); }
 .hk .kc-story { box-shadow: 0 18px 40px -18px rgba(43,20,110,.35), 0 0 0 1px rgba(17,17,17,.05); z-index: 4; }
-.hk .s1 { top: 6%; left: -6%; }
-.hk .s2 { top: 22%; right: -8%; left: auto; }
-.hk .s3 { bottom: 26%; left: -10%; top: auto; }
-.hk .s4 { bottom: 6%; right: -4%; left: auto; top: auto; }
+.hk .s1 { top: 0; left: -10%; }
+.hk .s2 { top: 32%; right: -14%; left: auto; }
+.hk .s3 { bottom: 34%; left: -14%; top: auto; }
+.hk .s4 { bottom: 2%; right: -8%; left: auto; top: auto; }
+.lp-wall-klaro .klaro { margin-bottom: 6%; }
 .lp-hero-visual { position: relative; display: grid; place-items: center; min-height: 520px; }
 .lp-hero-visual .kc-stage-caption { position: static; margin-top: 4px; }
 .lp-hero-visual .kc-stage-caption span { color: var(--muted); background: #fff; border-color: var(--line-3); }
@@ -417,4 +418,11 @@ body { margin: 0; background: #fff; }
   .hk-comet, .hk-flash { display: none; }
   .hk-figure img { animation: none; }
   .lp-bubble { animation: none; opacity: 1; }
+}
+@media (max-width: 640px) {
+  .lp-hero-visual { overflow: hidden; padding-top: 40px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .hk .s2, .hk .s3 { display: none; }
+  .hk .s1 { left: 0 !important; }
+  .hk .s4 { right: 0 !important; }
+  .hk-fallback .klaro { font-size: 21px !important; }
 }
