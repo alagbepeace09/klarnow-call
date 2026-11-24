@@ -1,0 +1,144 @@
+// Sample content used by the preview flow. In the product these come from the real
+// website scan and the real call. Nothing here is presented as a live result.
+
+export const PRESETS = {
+  plumbing: {
+    label: 'Trades & home services',
+    desc: 'Local plumbing and heating engineers. Boiler repairs and servicing, leaks and emergency call-outs.',
+    services: ['Boiler repair', 'Boiler servicing', 'Emergency call-outs', 'Bathroom fitting'],
+    facts: [
+      ['Opening hours', 'Mon–Fri 8:00–18:00, Sat 9:00–13:00', false],
+      ['Areas covered', 'Manchester, Stockport, Trafford', false],
+      ['Call-out fee', 'From £65 + VAT', true],
+      ['Emergencies', '24/7 for no heating or active leaks', true]
+    ],
+    sum: {
+      customer: 'Sam Okafor',
+      enquiry: 'Boiler losing pressure, wants a visit this week',
+      details: ['Postcode M20 2AB', 'Prefers Thursday morning', 'Not urgent: heating still on'],
+      action: 'Offered Thursday 9:30, the earliest slot in your hours',
+      outcome: 'Visit requested. Waiting for you to confirm. Customer told to expect a text.',
+      follow: 'Confirm or move Thursday 9:30. The customer is expecting a text from you.'
+    }
+  },
+  dental: {
+    label: 'Health & clinics',
+    desc: 'Friendly private dental practice offering check-ups, hygiene and cosmetic treatments.',
+    services: ['Check-ups', 'Hygienist', 'Teeth whitening', 'Emergency appointments'],
+    facts: [
+      ['Opening hours', 'Mon–Fri 8:30–17:30', false],
+      ['Location', '12 High Street, free parking behind', false],
+      ['New patients', 'Welcome, private only', true],
+      ['Emergency fee', 'From £85', true]
+    ],
+    sum: {
+      customer: 'Amara Bello',
+      enquiry: 'Chipped tooth, wants an appointment soon',
+      details: ['New patient', 'Some sensitivity', 'Free after 3pm'],
+      action: 'Offered tomorrow 15:40 emergency slot',
+      outcome: 'Appointment requested. Waiting for you to confirm.',
+      follow: 'Confirm tomorrow 15:40 and send the new-patient form.'
+    }
+  },
+  salon: {
+    label: 'Hair & beauty',
+    desc: 'Hair and beauty salon for cuts, colour, braids and occasion styling.',
+    services: ['Cut & finish', 'Colour', 'Braids', 'Bridal styling'],
+    facts: [
+      ['Opening hours', 'Tue–Sat 9:00–19:00', false],
+      ['Location', 'Unit 4, Market Arcade', false],
+      ['Deposits', '£20 for colour and braids', true],
+      ['Patch tests', 'Needed 48 hours before colour', false]
+    ],
+    sum: {
+      customer: 'Tolu Adeyemi',
+      enquiry: 'Knotless braids for Saturday',
+      details: ['Mid-back length', 'First visit', 'Flexible on time'],
+      action: 'Offered Saturday 10:00 and shared the deposit policy',
+      outcome: 'Booking requested. Deposit link not sent yet.',
+      follow: 'Confirm Saturday 10:00 and send the £20 deposit link.'
+    }
+  },
+  restaurant: {
+    label: 'Food & hospitality',
+    desc: 'Neighbourhood restaurant serving seasonal plates, with private dining for groups.',
+    services: ['Table bookings', 'Private dining', 'Takeaway orders', 'Allergy questions'],
+    facts: [
+      ['Opening hours', 'Wed–Sun 12:00–22:30', false],
+      ['Address', '48 Canal Street', false],
+      ['Large groups', '8+ need a deposit', true],
+      ['Dietary', 'Vegan and gluten-free options', false]
+    ],
+    sum: {
+      customer: 'Chris Walsh',
+      enquiry: 'Table for 10 on Friday, one nut allergy',
+      details: ['Friday 19:30', '10 guests', 'Nut allergy noted'],
+      action: 'Checked hours and explained the deposit for groups',
+      outcome: 'Booking requested. Deposit needed before it is confirmed.',
+      follow: 'Confirm Friday 19:30 for 10 and send the deposit link.'
+    }
+  }
+};
+
+export function kindFrom(url) {
+  const u = (url || '').toLowerCase();
+  if (/dent|smile|teeth|ortho/.test(u)) return 'dental';
+  if (/salon|hair|beauty|braid|barber|nail/.test(u)) return 'salon';
+  if (/restaurant|kitchen|cafe|bistro|grill|food|eat/.test(u)) return 'restaurant';
+  return 'plumbing';
+}
+
+export function cleanUrl(url) {
+  return (url || '').trim().replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/$/, '');
+}
+
+export function validUrl(u) {
+  return /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/.*)?$/i.test(cleanUrl(u));
+}
+
+export function nameFrom(url) {
+  const s = cleanUrl(url).toLowerCase().split(/[/?#]/)[0];
+  let base = s.split('.')[0] || '';
+  if (!base) return '';
+  const words = ['plumbing', 'heating', 'dental', 'clinic', 'salon', 'hair', 'beauty', 'kitchen', 'cafe', 'restaurant', 'studio', 'solicitors', 'services', 'group', 'braids', 'barbers', 'smiles'];
+  base = base.replace(/[-_]+/g, ' ');
+  words.forEach((w) => { base = base.replace(new RegExp('([a-z])(' + w + ')', 'g'), '$1 $2'); });
+  return base.split(' ').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+export function greetingFor(name, kname) {
+  return 'Hi, thanks for calling ' + (name || 'us') + '. This is ' + (kname || 'Klaro') + ', the virtual receptionist. I can answer questions and take your details for the team. How can I help?';
+}
+
+export function sampleScript(bizName, klaroName, greeting, kind) {
+  const n = bizName || 'your business';
+  const s = PRESETS[kind || 'plumbing'].sum;
+  const first = s.customer.split(' ')[0];
+  return [
+    { who: 'k', text: greeting || greetingFor(n, klaroName) },
+    { who: 'c', text: 'Hi, ' + s.enquiry.charAt(0).toLowerCase() + s.enquiry.slice(1) + '.' },
+    { who: 'k', text: 'I can help with that. Can I take your name and the best number to reach you?' },
+    { who: 'c', text: first + '. This number is fine.' },
+    { who: 'k', text: 'Thanks ' + first + '. ' + s.action + '. I’ll pass this to the team at ' + n + ' to confirm, and they’ll text you.' }
+  ];
+}
+
+export function speak(text, voice, onEnd) {
+  try {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return false;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-GB';
+    u.rate = voice === 'calm' ? 0.92 : voice === 'bright' ? 1.08 : 1;
+    u.pitch = voice === 'bright' ? 1.15 : voice === 'calm' ? 0.9 : 1;
+    if (onEnd) u.onend = onEnd;
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+export function stopSpeech() {
+  try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+}

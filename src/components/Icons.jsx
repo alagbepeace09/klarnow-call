@@ -1,0 +1,56 @@
+const P = {
+  phone: 'M7.4 3.5l2.6 2.6-2.3 2.3a12 12 0 0 0 7.9 7.9l2.3-2.3 2.6 2.6-1.8 3.2C10.5 20 4 13.5 4.2 5.3z',
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  back: 'M19 12H5M11 6l-6 6 6 6',
+  globe: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18',
+  doc: 'M8 4h8l3 3v13H5V4h3zM9 11h6M9 15h4',
+  cal: 'M7 5h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zM8 3v4M16 3v4M4 10h16',
+  calcheck: 'M7 5h10a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3zM8 3v4M16 3v4M4 10h16M9 15l2 2 4-4',
+  bell: 'M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0',
+  user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 20a8 8 0 0 1 16 0',
+  clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
+  info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 7.5v.01',
+  alert: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v5.5M12 16.5v.01',
+  close: 'M7 7l10 10M17 7L7 17',
+  chev: 'M6 9l6 6 6-6',
+  play: 'M8 5.5v13l10-6.5z',
+  speaker: 'M4 9v6h4l5 4V5L8 9zM16.5 8.5a5 5 0 0 1 0 7',
+  spark: 'M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1',
+  shield: 'M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z M9 12l2 2 4-4',
+  hand: 'M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11V4.5a1.5 1.5 0 0 1 3 0V12M14 11.5V6a1.5 1.5 0 0 1 3 0v8a7 7 0 0 1-7 7h-.5A6.5 6.5 0 0 1 4 15.5V12a1.5 1.5 0 0 1 3 0v2',
+  book: 'M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4zM5 16a4 4 0 0 1 4-4h10',
+  route: 'M6 3v6a3 3 0 0 0 3 3h6a3 3 0 0 1 3 3v6M3 18l3 3 3-3M15 6l3-3 3 3',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
+  moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
+  sim: 'M8 3h6l4 4v14H6V5a2 2 0 0 1 2-2zM9 12h6v6H9z',
+  inbox: 'M4 13l2.5-7h11L20 13v6H4zM4 13h5l1 2h4l1-2h5',
+  eye: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  plus: 'M12 5v14M5 12h14',
+  wrench: 'M14.5 6.5a4 4 0 0 0-5.3 5.3L4 17l3 3 5.2-5.2a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z',
+  tooth: 'M7 3c-2 0-3.5 2-3 5 .4 2.5 1.5 4 2 7 .5 3 1 6 2.5 6S10 17 12 17s2 4 3.5 4 2-3 2.5-6c.5-3 1.6-4.5 2-7 .5-3-1-5-3-5-2 0-3 1-5 1S9 3 7 3z',
+  scissors: 'M6 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM8.5 8.5L20 19M8.5 15.5L20 5',
+  fork: 'M7 3v8a2 2 0 0 0 4 0V3M9 11v10M16 3c-2 0-3 2.5-3 6s1 4 3 4v8',
+  home: 'M4 11l8-7 8 7v9H4zM10 20v-5h4v5',
+  scale: 'M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z',
+  car: 'M5 16l1.5-6h11L19 16M3 16h18v3H3zM7 19v2M17 19v2M7.5 13h.01M16.5 13h.01',
+  zap: 'M13 3L5 14h6l-1 7 8-11h-6z',
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z'
+};
+
+export default function Icon({ name, size, className = '', style, strokeWidth }) {
+  const cls = 'ic' + (size === 'sm' ? ' ic-sm' : size === 'lg' ? ' ic-lg' : '') + (className ? ' ' + className : '');
+  return (
+    <svg className={cls} viewBox="0 0 24 24" aria-hidden="true" style={strokeWidth ? { ...style, strokeWidth } : style}>
+      <path d={P[name]} />
+    </svg>
+  );
+}
+
+export function LogoMark() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10.6 1h2.8v8.2l5.8-5.8 2 2-5.8 5.8H23v2.8h-7.6l5.8 5.8-2 2-5.8-5.8V23h-2.8v-7.6l-5.8 5.8-2-2 5.8-5.8H1v-2.8h7.6L2.8 4.8l2-2 5.8 5.8z" />
+    </svg>
+  );
+}
