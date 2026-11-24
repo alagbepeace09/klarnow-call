@@ -426,3 +426,4 @@ body { margin: 0; background: #fff; }
   .hk .s4 { right: 0 !important; }
   .hk-fallback .klaro { font-size: 21px !important; }
 }
+.lp-wall-klaro .tag { z-index: 2; } .lp-wall-klaro img { position: relative; z-index: 1; }
