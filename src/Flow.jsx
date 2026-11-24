@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
+import Ally from './components/Ally.jsx';
 import { PRESETS, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
 
 const VOICES = { warm: ['Warm', 'Friendly, British'], bright: ['Bright', 'Upbeat, quick'], calm: ['Calm', 'Low, unhurried'] };
@@ -610,7 +611,7 @@ export function SummaryCard({ sum, phone, kname, demo = true }) {
     <div className="kc-summary">
       <div className="kc-summary-head"><b>Call summary</b>{demo && <span className="kc-pill pill-demo"><span className="dot" />Demo · nothing was booked or sent</span>}</div>
       <div className="kc-chain">
-        <div className="kc-link"><span className="i" style={{ background: '#f3efff', color: '#5b35c9' }}><Icon name="user" /></span><div><div className="lab">Customer</div><div className="val">{sum.customer}</div><div className="sub">{phone} · called just now</div></div></div>
+        <div className="kc-link"><span className="i" style={{ background: 'none', overflow: 'hidden' }}><Ally shape="circle" tile="violet" size={34} radius={10} /></span><div><div className="lab">Customer</div><div className="val">{sum.customer}</div><div className="sub">{phone} · called just now</div></div></div>
         <div className="kc-link"><span className="i" style={{ background: '#eef4ff', color: '#1d4ed8' }}><Icon name="doc" /></span><div><div className="lab">Enquiry</div><div className="val">{sum.enquiry}</div><div className="kc-kv">{sum.details.map((d) => <span key={d} className="kv">{d}</span>)}</div></div></div>
         <div className="kc-link"><span className="i" style={{ background: '#dfff75', color: '#111' }}><Icon name="cal" /></span><div><div className="lab">Attempted action</div><div className="val">{sum.action}</div></div></div>
         <div className="kc-link"><span className="i" style={{ background: '#fff5e3', color: '#7a4300' }}><Icon name="clock" /></span><div><div className="lab">Outcome</div><div className="val">{sum.outcome}</div></div></div>

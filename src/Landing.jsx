@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
 import { SummaryCard } from './Flow.jsx';
+import HeroKlaro, { KLARO_RENDER } from './components/HeroKlaro.jsx';
+import Ally, { CALLERS } from './components/Ally.jsx';
 import { PRESETS, validUrl, sampleScript, speak, stopSpeech } from './data.js';
 
 /* ---------- helpers ---------- */
@@ -99,13 +101,13 @@ function Hero({ onStart }) {
           <li><Icon name="check" />Nothing goes live until you say so</li>
         </ul>
       </div>
-      <div className="kc-stage" aria-label="Example: Klaro handles a call from start to finish">
-        <div className="kc-grid" /><div className="kc-beam" /><div className="kc-beam-core" /><div className="kc-pool" />
-        <div className="kc-story s1"><span className="step">Call</span><span className="ico"><Icon name="phone" /></span><div><b>Incoming call · 07:42</b><span>You're on a job. Klaro picks up.</span></div></div>
-        <div className="kc-story s2"><span className="step">Enquiry</span><span className="ico"><Icon name="doc" /></span><div><b>Enquiry captured</b><span>Boiler losing pressure · M20 · wants Thursday</span></div></div>
-        <div className="kc-story s3"><span className="step">Action</span><span className="ico"><Icon name="calcheck" /></span><div><b>Visit requested</b><span>Thu 9:30 offered, waiting on you</span></div></div>
-        <div className="kc-story s4"><span className="step">You</span><span className="ico"><Icon name="bell" /></span><div><b>You're told straight away</b><span>Text + email to you · 07:44</span></div></div>
-        <div className="kc-stage-klaro"><Klaro mood="welcome" size={300} /></div>
+      <div className="lp-hero-visual" aria-label="Example: Klaro handles a call from start to finish">
+        <HeroKlaro size={500} id="hero">
+          <div className="kc-story s1"><span className="step">Call</span><span className="ico" style={{ background: 'none', padding: 0 }}><Ally shape="circle" tile="violet" size={38} radius={22} /></span><div><b>Incoming call · 07:42</b><span>You're on a job. Klaro picks up.</span></div></div>
+          <div className="kc-story s2"><span className="step">Enquiry</span><span className="ico"><Icon name="doc" /></span><div><b>Enquiry captured</b><span>Boiler losing pressure · M20 · wants Thursday</span></div></div>
+          <div className="kc-story s3"><span className="step">Action</span><span className="ico"><Icon name="calcheck" /></span><div><b>Visit requested</b><span>Thu 9:30 offered, waiting on you</span></div></div>
+          <div className="kc-story s4"><span className="step">You</span><span className="ico"><Icon name="bell" /></span><div><b>You're told straight away</b><span>Text + email to you · 07:44</span></div></div>
+        </HeroKlaro>
         <div className="kc-stage-caption"><span>Example call · how Klaro handles one enquiry</span></div>
       </div>
     </section>
@@ -119,7 +121,7 @@ function Marquee() {
     <section className="lp-marquee" aria-label="Built for businesses like these">
       <p>Built for businesses that can't always pick up</p>
       <div className="lp-marquee-track">
-        <div className="lp-marquee-row">{row.map((it, i) => <span key={i} className="lp-mq" aria-hidden={i >= items.length}><Icon name={it[0]} size="sm" />{it[1]}</span>)}</div>
+        <div className="lp-marquee-row">{row.map((it, i) => <span key={i} className="lp-mq" aria-hidden={i >= items.length}><Ally {...CALLERS[i % CALLERS.length]} size={30} radius={30} />{it[1]}</span>)}</div>
       </div>
     </section>
   );
@@ -145,7 +147,7 @@ function Moments() {
               <div className="lp-moment-top"><span className="lp-ico"><Icon name={m.icon} /></span><h3>{m.t}</h3></div>
               <p>{m.d}</p>
               <div className="lp-phone-pair">
-                <div className="lp-notif missed"><span className="dot" /><div><b>Missed call · {m.time}</b><span>Unknown number</span></div></div>
+                <div className="lp-notif missed"><span className="lp-av" style={{ width: 30, height: 30, opacity: .5 }}><Ally {...CALLERS[i * 2]} size={30} radius={9} /></span><div><b>Missed call · {m.time}</b><span>Unknown number</span></div></div>
                 <div className="lp-notif handled"><span className="kl"><Klaro mood="success" size={30} decorative /></span><div><b>Klaro handled it · {m.time}</b><span>{m.klaro}</span></div></div>
               </div>
             </Reveal>
@@ -247,7 +249,12 @@ function SampleCall() {
             </div>
           </div>
           <div className="lp-listen-script" aria-live="polite">
-            {shown.map((l, i) => <div key={i} className={'kc-line ' + l.who}><small>{l.who === 'k' ? 'Klaro' : 'Caller'}</small>{l.text}</div>)}
+            {shown.map((l, i) => (
+              <div key={i} className={'lp-line-row ' + l.who}>
+                <span className="lp-av">{l.who === 'k' ? <img src={KLARO_RENDER} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', background: '#1b1530' }} /> : <Ally shape="circle" tile="violet" size={34} radius={10} />}</span>
+                <div className={'kc-line ' + l.who}><small>{l.who === 'k' ? 'Klaro' : 'Caller · Sam'}</small>{l.text}</div>
+              </div>
+            ))}
             {done && (
               <div className="lp-listen-sum">
                 <span className="lp-kicker lime" style={{ marginBottom: 10 }}>Sent to the owner, 5 seconds later</span>
@@ -363,8 +370,8 @@ function CommandCentre() {
             <div className="lp-dash-grid">
               <div className="lp-dash-list">
                 <div className="lp-dash-h">Recent calls</div>
-                {calls.map((c) => (
-                  <div key={c[0]} className="lp-dash-row"><span className="mono t">{c[0]}</span><div><b>{c[1]}</b><span>{c[2]}</span></div><span className={'kc-pill ' + c[4]}><span className="dot" />{c[3]}</span></div>
+                {calls.map((c, i) => (
+                  <div key={c[0]} className="lp-dash-row"><span className="mono t">{c[0]}</span><span className="lp-av"><Ally {...CALLERS[i]} size={34} radius={10} /></span><div><b>{c[1]}</b><span>{c[2]}</span></div><span className={'kc-pill ' + c[4]}><span className="dot" />{c[3]}</span></div>
                 ))}
               </div>
               <div className="lp-dash-needs">
@@ -410,6 +417,7 @@ function Industries() {
             <ul>{t.handles.map((h) => <li key={h}><Icon name="check" />{h}</li>)}</ul>
           </div>
           <div className="lp-ind-card">
+            <div className="lp-ind-persona"><Ally {...CALLERS[on]} size={56} radius={16} /><div><b>{p.sum.customer}</b><span>Calling about: {p.sum.enquiry.toLowerCase()}</span></div></div>
             <div className="lp-ind-call">
               <div className="kc-line c"><small>Caller</small>Hi, {p.sum.enquiry.charAt(0).toLowerCase() + p.sum.enquiry.slice(1)}.</div>
               <div className="kc-line k"><small>Klaro</small>{p.sum.action}. I'll pass this to the team to confirm.</div>
@@ -563,16 +571,53 @@ function Faq() {
 
 function FinalCta({ onStart }) {
   return (
-    <section className="lp-final">
-      <div className="lp-final-in">
-        <div className="kc-grid" /><div className="kc-beam" /><div className="kc-pool" />
+    <section className="lp-final-light">
+      <div className="lp-wrap lp-final-grid">
         <div className="lp-final-copy">
+          <span className="lp-kicker">Try it now</span>
           <h2 className="lp-h2">Hear your receptionist before you sign up.</h2>
           <p className="lp-lede">Paste your website. Klaro learns your business, then answers as you.</p>
-          <UrlForm onStart={onStart} id="final-url" dark />
-          <div className="kc-alt" style={{ color: 'rgba(255,255,255,.72)' }}>No website? <button className="link" style={{ color: '#fff' }} onClick={() => onStart('', true)}>Describe your business instead</button></div>
+          <UrlForm onStart={onStart} id="final-url" />
+          <div className="kc-alt">No website? <button className="link" onClick={() => onStart('', true)}>Describe your business instead</button></div>
         </div>
-        <div className="lp-final-klaro"><Klaro mood="welcome" size={260} /></div>
+        <HeroKlaro size={420} id="final" beamFrom={-260} />
+      </div>
+    </section>
+  );
+}
+
+function Callers() {
+  const said = {
+    1: 'Can you come Thursday?', 8: 'Is it urgent if…', 10: 'Do you take card?', 13: 'Table for 10?', 19: 'Are you open now?', 22: 'How much is it?'
+  };
+  const tiles = ['violet', 'lime', 'lilac', 'amber', 'blush', 'mist'];
+  const shapes = ['circle', 'drip', 'square', 'drop'];
+  const cells = [];
+  for (let i = 0; i < 24; i++) cells.push({ i, shape: shapes[(i * 3 + Math.floor(i / 6)) % 4], tile: tiles[(i + Math.floor(i / 6) * 2) % 6], look: (i % 3) - 1 });
+  // the 2×2 middle block (cols 3–4, rows 2–3) is Klaro
+  const skip = new Set([8, 9, 14, 15]);
+  return (
+    <section className="lp-section">
+      <div className="lp-wrap lp-callers">
+        <Reveal className="lp-split-copy">
+          <span className="lp-kicker">Your callers</span>
+          <h2 className="lp-h2">Every caller is different. Klaro is ready for all of them.</h2>
+          <p className="lp-lede">The rushed one, the unsure one, the one with an emergency, the one who just wants your hours. Klaro adapts to each, and you get the same clear summary every time.</p>
+          <ul className="lp-callers-list">
+            <li><Ally shape="drip" tile="amber" size={44} radius={12} /><div><b>The urgent one</b><span>Flagged in Needs You straight away, with what's happening.</span></div></li>
+            <li><Ally shape="square" tile="lilac" size={44} radius={12} /><div><b>The first-timer</b><span>Gets clear answers from your approved facts, then booked in.</span></div></li>
+            <li><Ally shape="circle" tile="lime" size={44} radius={12} /><div><b>The quick question</b><span>Answered in one go. No callback needed.</span></div></li>
+          </ul>
+        </Reveal>
+        <Reveal className="lp-wall" delay={100} aria-label="A wall of different callers around Klaro">
+          {cells.filter((c) => !skip.has(c.i)).map((c) => (
+            <div key={c.i} className={'lp-wall-cell' + (said[c.i] ? ' talk' : '')}>
+              {said[c.i] && <span className="lp-bubble" style={{ animationDelay: (Object.keys(said).indexOf(String(c.i)) * 1) + 's' }}>{said[c.i]}</span>}
+              <Ally shape={c.shape} tile={c.tile} size={100} radius={16} look={c.look * 3} />
+            </div>
+          ))}
+          <div className="lp-wall-klaro" style={{ gridRow: '2 / span 2', gridColumn: '3 / span 2' }}><span className="tag"><i />Klaro answering</span><img src={KLARO_RENDER} alt="Klaro answering calls" /></div>
+        </Reveal>
       </div>
     </section>
   );
@@ -616,6 +661,7 @@ export default function Landing({ onStart }) {
         <Hero onStart={onStart} />
         <Marquee />
         <Moments />
+        <Callers />
         <HowItWorks onStart={onStart} />
         <SampleCall />
         <Chain />
