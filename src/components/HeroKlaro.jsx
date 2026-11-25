@@ -68,7 +68,7 @@ export default function HeroKlaro({ size = 460, id = 'hk', children, beamFrom = 
         {failed ? (
           <div className="hk-fallback"><Klaro mood="welcome" size={size * 0.62} /></div>
         ) : (
-          <img src={KLARO_RENDER} alt="Klaro, the Klarnow Call receptionist, waving hello" width="1254" height="1254" onError={() => setFailed(true)} draggable="false" />
+          <img src={KLARO_RENDER} alt="Klaro, the Klarnow Call receptionist, waving hello" width="1254" height="1254" fetchPriority="high" onError={() => setFailed(true)} draggable="false" />
         )}
       </div>
 
