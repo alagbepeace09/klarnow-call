@@ -2,6 +2,7 @@ import { Component } from 'react';
 import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
 import Ally from './components/Ally.jsx';
+import { Brand, ThemeToggle } from './components/Brand.jsx';
 import { PRESETS, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
 
 const VOICES = { warm: ['Warm', 'Friendly, British'], bright: ['Bright', 'Upbeat, quick'], calm: ['Calm', 'Low, unhurried'] };
@@ -255,11 +256,11 @@ export default class Flow extends Component {
     return (
       <div className={'kc' + (s.rm ? ' rm' : '')}>
         <header className="kc-top">
-          <a className="kc-logo" href="/" onClick={(e) => { e.preventDefault(); this.props.onHome(); }} aria-label="Klarnow Call home">KLARNOW<LogoMark /></a>
-          <span className="kc-product">Call</span>
+          <Brand onClick={(e) => { e.preventDefault(); this.props.onHome(); }} />
           <div className="kc-top-mid"><span className="kc-chip"><Icon name="globe" size="sm" /><span>{siteLabel}</span></span></div>
           <div className="kc-top-right">
             <span className={'kc-pill ' + (onCall && c === 'connected' ? 'pill-live' : 'pill-demo')}><span className="dot" />{onGen ? 'Preview · not live' : c === 'connected' ? 'Live demo call' : 'Demo · not live'}</span>
+            {this.props.onToggleTheme && <ThemeToggle theme={this.props.theme} onToggle={this.props.onToggleTheme} />}
           </div>
         </header>
 
@@ -291,7 +292,7 @@ export default class Flow extends Component {
 
               {s.gen === 'failed' && (<>
                 <div>
-                  <span className="kc-kicker" style={{ color: '#b42318' }}>Couldn't read the site</span>
+                  <span className="kc-kicker" style={{ color: 'var(--red-ink)' }}>Couldn't read the site</span>
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>We couldn't read {siteLabel}</h1>
                   <p className="kc-sub">Nothing is wrong with your business. Some sites block automatic reading, are still loading, or the address has a typo.</p>
                 </div>
@@ -396,7 +397,7 @@ export default class Flow extends Component {
                 </div>
 
                 <div className="kc-cta-bar">
-                  <button className="btn btn-primary btn-lg" disabled={cannotHear} onClick={() => this.reset({ step: 'call', call: 'idle' })}>Let me hear {kname}<Icon name="arrow" /></button>
+                  <button className="btn btn-primary btn-lg" disabled={cannotHear} onClick={() => this.reset({ step: 'call', call: 'idle' })}>Let me hear {kname}<span className="arr"><Icon name="arrow" /></span></button>
                   <span className="note"><Icon name="phone" size="sm" /><span>{cannotHear ? 'Add a business name and at least one service' : 'Next: ' + kname + ' rings your phone'}</span></span>
                 </div>
               </>)}
@@ -496,7 +497,7 @@ export default class Flow extends Component {
 
               {c === 'completed' && (<>
                 <div>
-                  <span className="kc-kicker" style={{ color: '#2f4000' }}><span>Call completed · {mm} min {ss} sec</span></span>
+                  <span className="kc-kicker" style={{ color: 'var(--lime-ink)' }}><span>Call completed · {mm} min {ss} sec</span></span>
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>That's how {kname} handles your calls.</h1>
                   <p className="kc-sub">Here's what {kname} would send you after this call. Every call ends with one of these.</p>
                 </div>
@@ -509,14 +510,14 @@ export default class Flow extends Component {
                   <SummaryCard sum={P.sum} phone={masked} kname={kname} />
                 )}
                 <div className="kc-cta-bar">
-                  <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.setState({ saveOpen: true }); }}>Save my Klaro<Icon name="arrow" /></button>
+                  <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.setState({ saveOpen: true }); }}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>
                   <button className="btn btn-ghost btn-lg" onClick={() => this.callAgain()}>Call me again</button>
                 </div>
               </>)}
 
               {problem && (<>
                 <div>
-                  <span className="kc-kicker" style={{ color: c === 'failed' ? '#b42318' : '#7a4300' }}>{c === 'failed' ? 'Call not placed' : 'No answer'}</span>
+                  <span className="kc-kicker" style={{ color: c === 'failed' ? 'var(--red-ink)' : 'var(--amber-ink)' }}>{c === 'failed' ? 'Call not placed' : 'No answer'}</span>
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>{c === 'failed' ? 'We couldn’t place the call' : 'Your phone wasn’t answered'}</h1>
                   <p className="kc-sub">{c === 'failed' ? 'No call was made and nothing was recorded. This can happen if the number is wrong or the network is busy.' : 'It rang for 30 seconds. ' + kname + ' didn’t speak to anyone and nothing was recorded.'}</p>
                 </div>
@@ -538,7 +539,7 @@ export default class Flow extends Component {
                   {shown.map((l, i) => (<div key={i} className={'kc-line ' + l.who}><small>{l.who === 'k' ? kname : 'Caller (sample)'}</small>{l.text}</div>))}
                 </div>
                 <div className="kc-cta-bar">
-                  {s.previewDone && <button className="btn btn-primary btn-lg" onClick={() => this.setState({ saveOpen: true })}>Save my Klaro<Icon name="arrow" /></button>}
+                  {s.previewDone && <button className="btn btn-primary btn-lg" onClick={() => this.setState({ saveOpen: true })}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>}
                   {!s.previewDone && <button className="btn btn-ghost btn-lg" onClick={() => { this.clearTimers(); stopSpeech(); this.setState({ previewDone: true, scriptIdx: this.script().length }); }}>Stop preview</button>}
                   <button className="btn btn-ghost btn-lg" onClick={() => this.editNumber()}>Call my phone instead</button>
                 </div>

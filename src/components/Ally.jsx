@@ -58,7 +58,7 @@ export const CALLERS = [
   { shape: 'square', tile: 'lilac' },
   { shape: 'drop', tile: 'amber' },
   { shape: 'circle', tile: 'blush' },
-  { shape: 'square', tile: 'ink' },
+  { shape: 'square', tile: 'mist' },
   { shape: 'drip', tile: 'violet' },
   { shape: 'drop', tile: 'lime' }
 ];

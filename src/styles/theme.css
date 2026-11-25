@@ -1,0 +1,110 @@
+/* Klarnow Call: standalone brand tokens, light + dark.
+   Type: Instrument Sans (display + UI), JetBrains Mono (labels, buttons, data).
+   Colour: electric violet (Klaro's visor) + signal lime, on cool neutrals. */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  --font: 'Instrument Sans', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --bg: #ffffff;
+  --bg-2: #f1f2f6;
+  --bg-3: #e7e9ef;
+  --surface: #ffffff;
+  --surface-2: #f6f7fa;
+  --ink: #0e0e12;
+  --ink-2: #26262d;
+  --muted: #565866;
+  --muted-2: #636574;
+  --line: rgba(14, 14, 18, 0.13);
+  --line-2: #d3d6de;
+  --line-3: rgba(14, 14, 18, 0.075);
+
+  --accent: #7346ff;
+  --accent-hover: #5f30f5;
+  --accent-ink: #5527e8;
+  --accent-soft: #ebe4ff;
+  --on-accent: #ffffff;
+
+  --violet: #8a63ff;
+  --violet-ink: #5527e8;
+  --violet-soft: #b9a6ff;
+  --violet-wash: #f0ebff;
+  --lime: #d2ff3a;
+  --lime-2: #c1f01c;
+  --lime-ink: #2c3d00;
+  --lime-wash: #f3ffd1;
+  --amber: #ffb547;
+  --amber-ink: #7a4300;
+  --amber-wash: #fff4e0;
+  --red-ink: #b42318;
+  --red-wash: #fff0ed;
+
+  --stage: #0c0b12;
+  --stage-2: #15131f;
+  --nav-bg: rgba(12, 11, 18, 0.9);
+  --shadow-lg: 0 40px 80px -40px rgba(30, 14, 90, 0.35);
+  --grid-line: rgba(14, 14, 18, 0.08);
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #09090d;
+  --bg-2: #111117;
+  --bg-3: #1a1a22;
+  --surface: #131319;
+  --surface-2: #1a1a22;
+  --ink: #f3f3f7;
+  --ink-2: #dcdce4;
+  --muted: #a2a3b1;
+  --muted-2: #9293a2;
+  --line: rgba(255, 255, 255, 0.14);
+  --line-2: #2d2d38;
+  --line-3: rgba(255, 255, 255, 0.075);
+
+  --accent: #8b66ff;
+  --accent-hover: #9d7dff;
+  --accent-ink: #b8a1ff;
+  --accent-soft: rgba(139, 102, 255, 0.18);
+  --on-accent: #ffffff;
+
+  --violet: #9b7bff;
+  --violet-ink: #bba6ff;
+  --violet-soft: #b9a6ff;
+  --violet-wash: rgba(139, 102, 255, 0.16);
+  --lime: #d2ff3a;
+  --lime-2: #e0ff6b;
+  --lime-ink: #d9ff5c;
+  --lime-wash: rgba(210, 255, 58, 0.12);
+  --amber: #ffb547;
+  --amber-ink: #ffc978;
+  --amber-wash: rgba(255, 181, 71, 0.14);
+  --red-ink: #ff8f80;
+  --red-wash: rgba(255, 110, 90, 0.13);
+
+  --stage: #0d0c14;
+  --stage-2: #17151f;
+  --nav-bg: rgba(24, 23, 31, 0.86);
+  --shadow-lg: 0 40px 80px -40px rgba(0, 0, 0, 0.8);
+  --grid-line: rgba(255, 255, 255, 0.07);
+}
+
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); transition: background-color .3s ease, color .3s ease; }
+
+/* theme toggle */
+.theme-toggle { position: relative; width: 38px; height: 38px; border-radius: 99px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06); color: #fff; display: grid; place-items: center; cursor: pointer; flex: none; transition: background .2s; }
+.theme-toggle:hover { background: rgba(255,255,255,.14); }
+.theme-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; position: absolute; transition: transform .45s var(--ease), opacity .3s; }
+.theme-toggle .sun { opacity: 0; transform: rotate(-90deg) scale(.6); }
+[data-theme='dark'] .theme-toggle .sun { opacity: 1; transform: none; }
+[data-theme='dark'] .theme-toggle .moon { opacity: 0; transform: rotate(90deg) scale(.6); }
+.theme-toggle.on-light { border-color: var(--line-2); background: var(--surface); color: var(--ink); }
+
+/* brand mark */
+.brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; color: inherit; font-family: var(--font); font-weight: 600; font-size: 18px; letter-spacing: -.02em; background: none; border: 0; padding: 0; cursor: pointer; }
+.brand-mark { width: 30px; height: 22px; flex: none; }
+.brand-word { white-space: nowrap; }
+.brand-word em { font-style: normal; font-weight: 400; opacity: .72; margin-left: 3px; }

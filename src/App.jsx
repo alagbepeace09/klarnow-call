@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Landing from './Landing.jsx';
 import Flow from './Flow.jsx';
+import { useTheme } from './components/Brand.jsx';
 
 function readRoute() {
   const path = window.location.pathname;
@@ -14,6 +15,7 @@ function readRoute() {
 
 export default function App() {
   const [route, setRoute] = useState(readRoute);
+  const [theme, toggleTheme] = useTheme();
 
   useEffect(() => {
     const onPop = () => setRoute(readRoute());
@@ -32,6 +34,6 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  if (route.view === 'flow') return <Flow key={route.key} init={route.init} onHome={home} />;
-  return <Landing key={route.key} onStart={start} />;
+  if (route.view === 'flow') return <Flow key={route.key} init={route.init} onHome={home} theme={theme} onToggleTheme={toggleTheme} />;
+  return <Landing key={route.key} onStart={start} theme={theme} onToggleTheme={toggleTheme} />;
 }
