@@ -664,7 +664,7 @@ function Plans({ onStart }) {
             <h3>Done with you</h3>
             <div className="lp-price">Guided setup</div>
             <ul><li><span>+</span>A call with our team first</li><li><span>+</span>We set up call handling with you</li><li><span>+</span>Facts, routing and alerts tuned</li><li><span>+</span>Go live with a tested number</li></ul>
-            <a className="btn btn-ghost btn-block" href="https://www.klarnow.co.uk/start">Talk to the team</a>
+            <button className="btn btn-ghost btn-block" onClick={() => onStart('', true)}>Start guided setup</button>
           </Reveal>
         </div>
       </div>
@@ -725,14 +725,14 @@ function Footer() {
   const cols = [
     ['Product', [['Platform', '#platform'], ['How it works', '#how'], ['Listen in', '#listen'], ['Pricing', '#pricing']]],
     ['Use cases', [['Trades', '#industries'], ['Clinics', '#industries'], ['Salons', '#industries'], ['Restaurants', '#industries']]],
-    ['Company', [['FAQ', '#faq'], ['Control & privacy', '#control'], ['Call us', 'tel:01616960976'], ['Klarnow', 'https://www.klarnow.co.uk']]]
+    ['Help', [['FAQ', '#faq'], ['Control & privacy', '#control'], ['Callers', '#callers'], ['Back to top', '#top']]]
   ];
   return (
     <footer className="ft">
       <div className="ft-glow" aria-hidden="true" />
       <div className="lp-wrap ft-in">
         <div className="ft-brand">
-          <div className="ft-word"><BrandMark className="ft-mark" /><span>klarnow<em>call</em></span></div>
+          <div className="ft-word"><BrandMark className="ft-mark" /><span>klaro<em>call</em></span></div>
           <p>The receptionist for calls you can't pick up.</p>
         </div>
         <div className="ft-cols">
@@ -741,7 +741,7 @@ function Footer() {
           ))}
         </div>
       </div>
-      <div className="lp-wrap ft-bottom"><span>© 2026 Klarnow Call · A Klarnow product · Manchester</span><span>Preview build · sample data</span></div>
+      <div className="lp-wrap ft-bottom"><span>© 2026 Klaro Call</span><span>Preview build · sample data</span></div>
     </footer>
   );
 }

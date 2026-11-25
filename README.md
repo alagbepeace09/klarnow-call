@@ -1,6 +1,6 @@
-# Klarnow Call V1.1: marketing site and onboarding preview
+# Klaro Call V1.1: marketing site and onboarding preview
 
-The Klarnow Call landing page, plus the first three onboarding screens from the V1.1 brief:
+The Klaro Call landing page, plus the first three onboarding screens from the V1.1 brief:
 
 1. **Landing** (`/`): the full marketing page with the "Get my receptionist" website input.
 2. **Klaro Generator** (`/start?site=…`): scanning → review/edit, or manual entry when there's no website.
@@ -11,7 +11,7 @@ The Klarnow Call landing page, plus the first three onboarding screens from the 
 > A "Review tools" pill lets reviewers jump to any state and simulate failures. Add `?clean=1` to the URL to hide it.
 
 ## Brand and themes
-- Standalone Klarnow Call identity (separate from the Klarnow site): Instrument Sans + JetBrains Mono, electric violet `#7346ff` + signal lime `#d2ff3a`, visor logo mark.
+- Standalone Klaro Call identity (no links to klarnow.co.uk): Instrument Sans + JetBrains Mono, electric violet `#7346ff` + signal lime `#d2ff3a`, visor logo mark.
 - Light and dark mode: tokens live in `src/styles/theme.css` under `[data-theme]`. The toggle sits in the nav. The choice is saved in localStorage and defaults to the visitor's system setting.
 - Page structure follows the Nooks reference: floating capsule nav, `/ LABEL` section headers, numbered tab carousel, bento, dark dot-matrix and glass sections, big-wordmark footer.
 

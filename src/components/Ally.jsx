@@ -1,7 +1,7 @@
-// Allies characters, rebuilt for Klarnow Call as the callers Klaro talks to.
+// Allies characters, rebuilt for Klaro Call as the callers Klaro talks to.
 // Same geometry as the Allies set (circle, drip, rounded square, drop; thick ink
 // outline; crescent eyes whose position shows where they're looking), recoloured
-// to the Klarnow palette.
+// to the Klaro Call palette.
 
 export const ALLY_COLORS = {
   violet: '#845aee',

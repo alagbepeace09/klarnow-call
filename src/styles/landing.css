@@ -1,4 +1,4 @@
-/* Klarnow Call: landing page, Nooks-style structure, light + dark */
+/* Klaro Call: landing page, Nooks-style structure, light + dark */
 html { scroll-behavior: smooth; scroll-padding-top: 96px; }
 .lp { overflow-x: clip; background: var(--bg); }
 .lp em { font-style: normal; }

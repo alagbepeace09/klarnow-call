@@ -8,7 +8,7 @@ const LABELS = {
   attention: 'Klaro needs your attention'
 };
 
-/** Klaro: the Klarnow Call receptionist. Pure CSS character, 10em wide. */
+/** Klaro: the Klaro Call receptionist. Pure CSS character, 10em wide. */
 export default function Klaro({ mood = 'welcome', size = 240, decorative = false }) {
   return (
     <div

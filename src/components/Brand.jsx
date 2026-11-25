@@ -13,9 +13,9 @@ export function BrandMark({ className = 'brand-mark' }) {
 
 export function Brand({ onClick, href = '/' }) {
   return (
-    <a className="brand" href={href} onClick={onClick} aria-label="Klarnow Call home">
+    <a className="brand" href={href} onClick={onClick} aria-label="Klaro Call home">
       <BrandMark />
-      <span className="brand-word">klarnow<em>call</em></span>
+      <span className="brand-word">klaro<em>call</em></span>
     </a>
   );
 }

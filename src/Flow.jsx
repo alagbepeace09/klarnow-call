@@ -226,7 +226,7 @@ export default class Flow extends Component {
     let showRings = false, showTimer = false, showWave = false, waveCls = '', liveTitle = '', liveSub = '';
     if (c === 'requesting') { callMood = 'thinking'; stageBig = 'Requesting your call…'; stageSmall = 'Nothing has rung yet.'; liveTitle = 'Requesting your call'; liveSub = 'This takes a few seconds. Your phone hasn’t rung yet.'; }
     if (c === 'dialling') { callMood = 'working'; stageBig = 'Dialling…'; stageSmall = 'Calling ' + ccPhone + '. It hasn’t connected yet.'; liveTitle = 'Dialling your number'; liveSub = 'Your phone should ring in a moment.'; }
-    if (c === 'ringing') { callMood = 'listening'; showRings = true; stageBig = 'Your phone is ringing'; stageSmall = 'Answer it to talk to ' + kname + '. Not connected yet.'; liveTitle = 'Answer your phone'; liveSub = 'It’s ringing now from a Klarnow number. Answer it to talk to ' + kname + '.'; }
+    if (c === 'ringing') { callMood = 'listening'; showRings = true; stageBig = 'Your phone is ringing'; stageSmall = 'Answer it to talk to ' + kname + '. Not connected yet.'; liveTitle = 'Answer your phone'; liveSub = 'It’s ringing now from a Klaro Call number. Answer it to talk to ' + kname + '.'; }
     if (c === 'connected') { callMood = s.talk; stagePill = 'Live demo call'; stagePillCls = 'live'; showTimer = true; showWave = true; waveCls = s.talk === 'listening' ? 'listen' : ''; stageBig = kname + (s.talk === 'speaking' ? ' is speaking' : ' is listening'); stageSmall = 'The transcript and summary appear when the call ends.'; liveTitle = 'You’re talking to ' + kname; liveSub = 'Play a customer. ' + kname + ' only uses what you approved.'; }
     if (c === 'completed') { callMood = 'success'; stagePill = 'Call ended'; showTimer = true; showWave = true; waveCls = 'still'; stageBig = 'Call completed'; stageSmall = s.summaryReady ? 'Summary ready.' : 'Writing your summary…'; }
     if (c === 'failed') { callMood = 'attention'; stagePill = 'Call not placed'; stagePillCls = 'bad'; stageBig = 'The call didn’t go through'; stageSmall = 'No call was made and nothing was recorded.'; }
@@ -467,7 +467,7 @@ export default class Flow extends Component {
                   </div>
                   <label className="kc-consent" htmlFor="kc-consent">
                     <input type="checkbox" id="kc-consent" checked={s.consent} onChange={() => this.setState({ consent: !s.consent })} />
-                    <span>Yes, ring me now with one demo call from Klarnow. The call is recorded so I get a summary. <button className="link" onClick={(e) => { e.preventDefault(); this.toast('The privacy notice opens in a drawer in the build.'); }}>Privacy notice</button></span>
+                    <span>Yes, ring me now with one demo call from Klaro Call. The call is recorded so I get a summary. <button className="link" onClick={(e) => { e.preventDefault(); this.toast('The privacy notice opens in a drawer in the build.'); }}>Privacy notice</button></span>
                   </label>
                   <button className="btn btn-primary btn-lg btn-block" disabled={!(phoneValid && s.consent)} onClick={() => this.callMe()}><Icon name="phone" />Call me now</button>
                   <span className="kc-fine" style={{ textAlign: 'center' }}>{!phoneValid ? 'Enter your mobile number to continue' : !s.consent ? 'Tick the box to agree to the demo call' : 'One call, about two minutes. Standard rates may apply.'}</span>
