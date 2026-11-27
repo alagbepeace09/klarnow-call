@@ -117,7 +117,7 @@ export function initialWorkspace(draft, people, ownerId, nowInput, sample, examp
     today: dayLabel(now), todayLong: longLabel(now),
     clock: now.getHours() * 60 + now.getMinutes(),
     savedAt: isSample ? hhmm(addMin(now, -15)) : hhmm(now),
-    number: 'none',
+    number: { status: 'none' },
     demoCall: (draft && draft.testCall) || 'none',
     enquiries: [
       {
@@ -190,7 +190,10 @@ const addTl = (e, t, by, text) => ({ ...e, timeline: e.timeline.concat([{ t, by,
 const personName = (s, id) => (s.people && s.people[id] ? s.people[id].name : 'Someone');
 
 /** Which actions change the record (owner/admin only). */
-export const WRITE_ACTIONS = ['assign', 'attempt', 'confirm', 'send-result', 'told', 'resolve', 'reopen'];
+export const WRITE_ACTIONS = ['assign', 'attempt', 'confirm', 'send-result', 'told', 'resolve', 'reopen', 'request-number', 'cancel-number'];
+
+export const telHref = (n) => 'tel:' + String(n || '').replace(/[^\d+]/g, '');
+export const numberOf = (s) => (s && s.number && typeof s.number === 'object' ? s.number : { status: 'none' });
 
 export function reducer(s, a) {
   const minsNow = a.now && /^\d\d:\d\d$/.test(a.now) ? parseInt(a.now.slice(0, 2), 10) * 60 + parseInt(a.now.slice(3), 10) : s.clock + (a.mins || 2);
@@ -199,6 +202,11 @@ export function reducer(s, a) {
   const who = personName(s, a.actor);
   switch (a.type) {
     case 'reset': return initialWorkspace(a.draft);
+    case 'request-number': {
+      const kind = a.kind === 'forward' ? 'forward' : 'new';
+      return { ...s, number: { status: 'requested', kind, area: String(a.area || '').slice(0, 60), existing: String(a.existing || '').slice(0, 30), requestedAt: (s.today || '') + ' ' + now, requestedBy: who } };
+    }
+    case 'cancel-number': return { ...s, number: { status: 'none' } };
     case 'replace': return a.state;
     case 'assign': {
       const p = a.owner && s.people[a.owner];

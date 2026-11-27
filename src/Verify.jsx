@@ -102,6 +102,7 @@ export default function Verify({ mode: flow = 'save', draft, review, note, onHom
       return;
     }
     const r = await post('/api/auth/verify', { email: email.trim(), code });
+    if (r.ok && r.opsOnly) { onDone(r); return; }
     if (r.ok) { setResult(r); setStep('done'); return; }
     if (r.error === 'expired' || r.error === 'locked') { setStep('expired'); setCodeErr(r.message); setDigits(['', '', '', '', '', '']); return; }
     setStep('code'); setCodeErr(r.message || 'That code doesn’t match.');

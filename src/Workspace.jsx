@@ -4,7 +4,7 @@ import Ally from './components/Ally.jsx';
 import Klaro from './components/Klaro.jsx';
 import { BrandMark, ThemeToggle } from './components/Brand.jsx';
 import { Tag } from './components/Review.jsx';
-import { counts } from './workspace/model.js';
+import { counts, numberOf, telHref } from './workspace/model.js';
 
 // Set from the current workspace on every render of <Workspace>.
 let PEOPLE = {};
@@ -52,6 +52,34 @@ function SampleNote({ ws, live, onSetup, onExamples, role }) {
       <p><b>You’re looking at a sample workspace.</b> Set up a receptionist for your own business to see it here with your details.</p>
       <button className="ab ab-dark" onClick={onSetup}>Set up mine<Icon name="arrow" size="sm" /></button>
     </div>
+  );
+}
+
+function PhoneCard({ ws, role, go, ann }) {
+  const n = numberOf(ws);
+  return (
+    <section className="a-card a-dark">
+      <div className="a-card-top"><h2>Phone number</h2>
+        {n.status === 'live' ? <span className="ap t-green on-dark"><i />Live</span> : n.value ? <span className="ap t-amber on-dark"><i />Ready</span> : n.status === 'requested' ? <span className="ap t-amber on-dark"><i />Requested</span> : <span className="ap t-amber on-dark"><i />Not live</span>}
+      </div>
+      {n.value ? (<>
+        <NumberHero ws={ws} compact />
+        <p className="a-dark-p">{n.status === 'live' ? ws.klaro + ' answers calls to this number.' : 'Ready to share. ' + ws.klaro + ' starts answering when it goes live.'}</p>
+        <div className="a-dark-foot"><button className="ab ab-glass" onClick={() => go('/app/number')}>Website snippets<Icon name="arrow" size="sm" /></button></div>
+      </>) : n.status === 'requested' ? (<>
+        <p className="a-dark-t">Number requested</p>
+        <p className="a-dark-p">The Klarnow team is setting it up. It will appear here with Copy and Call buttons.</p>
+        <div className="a-dark-foot"><span className="a-mute">Requested {n.requestedAt}</span><button className="ab ab-glass" onClick={() => go('/app/number')}>View request</button></div>
+      </>) : (<>
+        <p className="a-dark-t">Next: get a number</p>
+        <p className="a-dark-p">Get a new number or keep the one customers already call. Calls reach {ws.klaro} only after this step.</p>
+        <div className="a-dark-foot">
+          <span className="a-mute">Saved · {ws.savedAt}</span>
+          {role === 'owner' ? <button className="ab ab-white" onClick={() => go('/app/number')}>Get a number<Icon name="arrow" size="sm" /></button> : <span className="a-mute">An owner sets this up</span>}
+        </div>
+      </>)}
+      <Tag kind="pending" show={ann} label="Number status" />
+    </section>
   );
 }
 
@@ -105,15 +133,7 @@ function FirstRun({ ws, role, me, go, onExamples, domain, personal }) {
             : <p className="a-glow-foot calm">Nothing is live until the phone number is connected.</p>}
         </section>
 
-        <section className="a-card a-dark">
-          <div className="a-card-top"><h2>Phone number</h2><span className="ap t-amber on-dark"><i />Not live</span></div>
-          <p className="a-dark-t">Next: connect a number</p>
-          <p className="a-dark-p">Forward the number customers already call, or get a new one. Calls reach {ws.klaro} only after this step.</p>
-          <div className="a-dark-foot">
-            <span className="a-mute">Saved · {ws.savedAt}</span>
-            {role === 'owner' ? <button className="ab ab-white" onClick={() => go('/app/number')}>Set up a number<Icon name="arrow" size="sm" /></button> : <span className="a-mute">An owner sets this up</span>}
-          </div>
-        </section>
+        <PhoneCard ws={ws} role={role} go={go} />
       </div>
 
       <div className="a-two">
@@ -221,18 +241,7 @@ function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup, onExampl
           ) : <p className="a-glow-foot calm">Klaro will add anything it can’t finish here.</p>}
         </section>
 
-        <section className="a-card a-dark">
-          <div className="a-card-top"><h2>Phone number</h2><span className="ap t-amber on-dark"><i />Not live</span></div>
-          <p className="a-dark-t">No number yet</p>
-          <p className="a-dark-p">Calls can’t reach {ws.klaro} until a number is active. Until then, the calls here are examples.</p>
-          <div className="a-dark-foot">
-            <span className="a-mute">Saved · {ws.savedAt}</span>
-            {role === 'owner'
-              ? <button className="ab ab-white" onClick={() => go('/app/number')}>Set up a number<Icon name="arrow" size="sm" /></button>
-              : <span className="a-mute">An owner sets this up</span>}
-          </div>
-          <Tag kind="pending" show={ann} label="Number not active" />
-        </section>
+        <PhoneCard ws={ws} role={role} go={go} ann={ann} />
       </div>
 
       <div className="a-two">
@@ -615,6 +624,130 @@ function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
   );
 }
 
+function CopyBtn({ text, label = 'Copy', className = 'ab ab-light' }) {
+  const [done, setDone] = useState(false);
+  const copy = () => {
+    const ok = () => { setDone(true); setTimeout(() => setDone(false), 2200); };
+    try { navigator.clipboard.writeText(text).then(ok, ok); } catch (e) { ok(); }
+  };
+  return <button className={className} onClick={copy}>{done ? 'Copied' : label}</button>;
+}
+
+function NumberHero({ ws, compact }) {
+  const n = numberOf(ws);
+  if (!n.value) return null;
+  return (
+    <div className={'a-num' + (compact ? ' compact' : '')}>
+      <span className="a-num-lab">{ws.biz}’s Klaro number</span>
+      <a className="a-num-v" href={telHref(n.value)}>{n.value}</a>
+      <div className="a-actions">
+        <CopyBtn text={n.value} label="Copy number" className="ab ab-white" />
+        <a className="ab ab-glass" href={telHref(n.value)}><Icon name="phone" size="sm" />Call it</a>
+      </div>
+    </div>
+  );
+}
+
+function NumberPage({ ws, role, save, saving }) {
+  const n = numberOf(ws);
+  const owner = role === 'owner';
+  const [kind, setKind] = useState(n.kind || 'new');
+  const [area, setArea] = useState(n.area || '');
+  const [existing, setExisting] = useState(n.existing || '');
+  const [err, setErr] = useState('');
+  const [editing, setEditing] = useState(false);
+  const submit = (ev) => {
+    ev.preventDefault();
+    if (kind === 'forward' && !/^\+?[\d\s()-]{7,20}$/.test(existing.trim())) { setErr('Enter the number customers call now, like 0161 555 0123.'); return; }
+    setErr('');
+    save({ type: 'request-number', kind, area: area.trim(), existing: existing.trim(), mins: 1 }, () => setEditing(false));
+  };
+  const digits = String(n.value || '').replace(/[^\d+]/g, '');
+  const snippets = n.value ? [
+    ['Plain text', 'Call us: ' + n.value],
+    ['Link (HTML)', '<a href="tel:' + digits + '">Call us on ' + n.value + '</a>'],
+    ['Button (HTML)', '<a href="tel:' + digits + '" style="display:inline-block;padding:12px 20px;border-radius:999px;background:#111;color:#fff;text-decoration:none;font-family:sans-serif">Call ' + ws.biz.replace(/"/g, '') + '</a>']
+  ] : [];
+  const showForm = owner && (n.status === 'none' || editing);
+  return (
+    <div className="a-page">
+      <header className="a-head">
+        <div><p className="a-eyebrow">Number & Go Live</p><h1>{n.value ? 'Your Klaro number' : 'Get a phone number for ' + ws.klaro}</h1>
+          <p className="a-sub">{n.value ? 'Put this number on your website, Google profile and anywhere customers look for you.' : 'This is the number customers will call. Calls to it reach ' + ws.klaro + ' once it’s live.'}</p></div>
+      </header>
+
+      {n.value && (
+        <div className="a-pair a-num-pair">
+          <div className="a-card a-dark a-num-card">
+            <div className="a-card-top"><h2>Phone number</h2>{n.status === 'live' ? <span className="ap t-green on-dark"><i />Live · {ws.klaro} answers</span> : <span className="ap t-amber on-dark"><i />Ready · not answering yet</span>}</div>
+            <NumberHero ws={ws} />
+            <p className="a-dark-p">{n.status === 'live' ? 'Calls to this number are answered by ' + ws.klaro + ' and show up in Calls & Enquiries.' : 'The Klarnow team has set this number up for you. ' + ws.klaro + ' starts answering when the team switches it to live, and you’ll see “Live” here.'}</p>
+          </div>
+          <div className="a-card flat">
+            <h3 className="a-h3">Put it on your website</h3>
+            <p className="a-fine">Copy one of these and paste it into your site. The link versions let people tap to call on a phone.</p>
+            <div className="a-snips">
+              {snippets.map((x) => (
+                <div key={x[0]} className="a-snip"><div className="a-snip-top"><b>{x[0]}</b><CopyBtn text={x[1]} /></div><code>{x[1]}</code></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {n.value && n.kind === 'forward' && n.existing && (
+        <div className="a-card flat">
+          <h3 className="a-h3">Forward your existing number</h3>
+          <p className="a-p">You asked to keep <b>{n.existing}</b>. Divert it to your Klaro number so callers reach {ws.klaro}. On most UK and Nigerian mobile networks, dial these from the phone that owns {n.existing}:</p>
+          <div className="a-snips two">
+            <div className="a-snip"><div className="a-snip-top"><b>When you don’t answer</b><CopyBtn text={'**61*' + digits + '#'} /></div><code>{'**61*' + digits + '#'}</code></div>
+            <div className="a-snip"><div className="a-snip-top"><b>When you’re busy</b><CopyBtn text={'**67*' + digits + '#'} /></div><code>{'**67*' + digits + '#'}</code></div>
+            <div className="a-snip"><div className="a-snip-top"><b>All calls</b><CopyBtn text={'**21*' + digits + '#'} /></div><code>{'**21*' + digits + '#'}</code></div>
+            <div className="a-snip"><div className="a-snip-top"><b>Turn forwarding off</b><CopyBtn text="##002#" /></div><code>##002#</code></div>
+          </div>
+          <p className="a-fine" style={{ marginTop: 10 }}>Landlines and business phone systems work differently. Your phone provider can set this up for you.</p>
+        </div>
+      )}
+
+      {!n.value && n.status === 'requested' && !editing && (
+        <div className="a-pair">
+          <div className="a-card flat a-pair-l">
+            <h3>Request sent</h3>
+            <p className="a-pair-t">{n.kind === 'forward' ? 'Forward ' + n.existing : 'New number' + (n.area ? ' · ' + n.area : '')}</p>
+            <div className="a-chips"><span>Requested {n.requestedAt}</span>{n.requestedBy && <span>by {n.requestedBy}</span>}</div>
+            {owner && <div className="a-actions" style={{ marginTop: 16 }}><button className="ab ab-light" onClick={() => setEditing(true)}>Change request</button><button className="ab ab-light" disabled={saving} onClick={() => save({ type: 'cancel-number', mins: 1 })}>Cancel request</button></div>}
+          </div>
+          <div className="a-card a-dark">
+            <div className="a-card-top"><h2>What happens next</h2><span className="ap t-amber on-dark"><i />Being set up</span></div>
+            <p className="a-dark-p">The Klarnow team is setting up your number. When it’s ready it appears here and on your Command Centre, with buttons to copy it, call it and add it to your website.</p>
+          </div>
+        </div>
+      )}
+
+      {!n.value && !owner && n.status === 'none' && <ReadOnly what="request a phone number" />}
+
+      {showForm && (
+        <form className="a-card a-form a-num-form" onSubmit={submit} noValidate>
+          <fieldset className="a-choice">
+            <legend>How should customers reach {ws.klaro}?</legend>
+            <label className={kind === 'new' ? 'on' : ''}><input type="radio" name="nk" checked={kind === 'new'} onChange={() => setKind('new')} /><span><b>Get a new number</b>A new local number just for {ws.klaro}. Put it on your website.</span></label>
+            <label className={kind === 'forward' ? 'on' : ''}><input type="radio" name="nk" checked={kind === 'forward'} onChange={() => setKind('forward')} /><span><b>Keep my number</b>Customers call the number they know. You divert it to {ws.klaro} when you’re busy.</span></label>
+          </fieldset>
+          {kind === 'new'
+            ? <div className="a-field"><label htmlFor="nm-area">Where should the number be from? <em>Optional</em></label><input id="nm-area" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. Manchester (0161), Lagos, or mobile" /></div>
+            : <div className="a-field"><label htmlFor="nm-ex">The number customers call now</label><input id="nm-ex" className={err ? 'bad' : ''} inputMode="tel" value={existing} onChange={(e) => { setExisting(e.target.value); setErr(''); }} placeholder="e.g. 0161 555 0123" aria-invalid={!!err} /></div>}
+          {err && <p className="a-err" role="alert"><Icon name="alert" size="sm" />{err}</p>}
+          <div className="a-actions">
+            <button className="ab ab-dark" type="submit" disabled={saving}>{saving ? 'Sending…' : n.status === 'requested' ? 'Update request' : 'Request my number'}</button>
+            {editing && <button className="ab ab-light" type="button" onClick={() => setEditing(false)}>Keep current request</button>}
+          </div>
+          <p className="a-fine">The Klarnow team sets up the number and adds it here, usually within one working day. Nothing is charged from this screen.</p>
+        </form>
+      )}
+    </div>
+  );
+}
+
 function NextReview({ which, go, role }) {
   const info = which === 'number'
     ? ['06 · Number & Go Live', 'Choose a new number or forward your own', 'The next review covers choosing or forwarding a number, payment and verification, and the requested, configuring, failed and live states. Paying alone won’t mark Klaro as live.']
@@ -679,7 +812,7 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
     ['home', '/app', 'Command Centre', 'grid'],
     ['enquiries', '/app/enquiries', 'Calls & Enquiries', 'phone', c.openEnq],
     ['needs', '/app/needs-you', 'Needs You', 'bell', c.needsOpen],
-    ['number', '/app/number', 'Number & Go Live', 'sim', null, true],
+    ['number', '/app/number', 'Number & Go Live', 'sim', null, !live],
     ['studio', '/app/studio', 'Klaro Studio', 'sparkle', null, true]
   ];
   const title = { home: 'Overview', enquiries: 'Calls & Enquiries', needs: 'Needs You', number: 'Number & Go Live', studio: 'Klaro Studio' }[view];
@@ -700,6 +833,7 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
           <div className="adm-title">
             <span className="a-eyebrow">{live ? 'Workspace' : 'Sample workspace'}</span>
             <h2>{words.slice(0, half).join(' ')}{words.length > 1 && <br />}{words.slice(half).join(' ')}</h2>
+            {numberOf(ws).value && <a className="adm-num" href={telHref(numberOf(ws).value)} title="Call your Klaro number"><Icon name="phone" size="sm" />{numberOf(ws).value}</a>}
           </div>
           <label className="adm-search">
             <Icon name="search" size="sm" />
@@ -755,7 +889,8 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
             {view === 'home' && <CommandCentre ws={ws} role={role} me={meP} go={go} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} domain={domain} personal={personal} />}
             {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} />}
             {view === 'needs' && <NeedsYou ws={ws} role={role} save={save} saving={saving} openEnq={openEnq} ann={ann} />}
-            {(view === 'number' || view === 'studio') && <NextReview which={view} go={go} role={role} />}
+            {view === 'number' && (live ? <NumberPage ws={ws} role={role} save={save} saving={saving} /> : <NextReview which={view} go={go} role={role} />)}
+            {view === 'studio' && <NextReview which={view} go={go} role={role} />}
           </main>
         </div>
       </div>

@@ -3,6 +3,7 @@ import Landing from './Landing.jsx';
 import Flow from './Flow.jsx';
 import Verify from './Verify.jsx';
 import Workspace from './Workspace.jsx';
+import Ops from './Ops.jsx';
 import { useTheme } from './components/Brand.jsx';
 import { ReviewPanel, AnnotationDock } from './components/Review.jsx';
 import { initialWorkspace, reducer, hhmm } from './workspace/model.js';
@@ -27,7 +28,8 @@ function readRoute() {
     return { view: 'flow', init: { url: site || (state && state !== 'restore' ? 'canalstreetkitchen.co.uk' : ''), manual: !site && !state, state }, key };
   }
   if (path === '/save') return { view: 'save', key };
-  if (path === '/signin') return { view: 'signin', key };
+  if (path === '/signin') return { view: 'signin', key, next: p.get('next') || '' };
+  if (path === '/ops') return { view: 'ops', key };
   if (path.startsWith('/app')) {
     const sub = path.split('/')[2] || '';
     const ws = { '': 'home', enquiries: 'enquiries', 'needs-you': 'needs', number: 'number', studio: 'studio' }[sub] || 'home';
@@ -94,7 +96,7 @@ export default function App() {
   const start = (url, manual) => go('/start' + (manual || !url ? '' : '?site=' + encodeURIComponent(url.trim())), { fresh: true });
   const home = () => go('/', { fresh: true });
   const onSave = (d) => { setDraft(d); store.set('kc-draft', d); go('/save'); };
-  const onVerified = (r) => { setSession({ signedIn: true, me: r.me, workspace: r.workspace, personal: r.personal, domain: r.domain }); setRole(r.me.role); go('/app'); };
+  const onVerified = (r) => { if (r.opsOnly) { go('/ops', { fresh: true }); return; } setSession({ signedIn: true, me: r.me, workspace: r.workspace, personal: r.personal, domain: r.domain }); setRole(r.me.role); go(route.next === 'ops' ? '/ops' : '/app', { fresh: true }); };
   const exampleCalls = (on) => applyLive({ type: on ? 'load-examples' : 'clear-examples' });
   const onPreviewDone = () => { setRole('owner'); go('/app'); };
   const signOut = () => fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { setSession(null); go('/', { fresh: true }); });
@@ -131,6 +133,8 @@ export default function App() {
     page = <Flow key={route.key} init={route.init} draft={draft} onHome={home} onSave={onSave} sim={sim} review={review} onScreen={(s) => setFlowScreen(s)} {...common} />;
   } else if (route.view === 'save') {
     page = <Verify key={route.key} draft={draft} review={review} onSetup={home} onHome={home} onBack={() => go(draft ? '/start?state=restore' : '/start', { fresh: true })} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
+  } else if (route.view === 'ops') {
+    page = <Ops key={route.key} onHome={home} onSignIn={() => go('/signin?next=ops')} theme={theme} onToggleTheme={toggleTheme} />;
   } else if (route.view === 'signin' || (route.view === 'app' && checked && !session && !review)) {
     page = <Verify key={route.key} mode="signin" review={review} note={route.view === 'app' ? 'Sign in to open your workspace.' : null} onSetup={home} onHome={home} onBack={home} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
   } else if (route.view === 'app') {

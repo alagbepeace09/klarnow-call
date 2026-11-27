@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       const a = { ...action, actor: u.email };
       if (a.owner && !s.people[a.owner]) a.owner = null;
       if (a.spokeBy && !s.people[a.spokeBy]) a.spokeBy = u.email;
-      ['reason', 'time', 'email', 'party', 'next'].forEach((k) => { if (a[k] != null) a[k] = String(a[k]).slice(0, 160); });
+      ['reason', 'time', 'email', 'party', 'next', 'area', 'existing', 'kind'].forEach((k) => { if (a[k] != null) a[k] = String(a[k]).slice(0, 160); });
       next = reducer(s, a);
     }
     u.ws.state = next;

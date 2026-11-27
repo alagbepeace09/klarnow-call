@@ -1,7 +1,7 @@
 import { readBody, send, ipOf, methodNotAllowed } from '../_lib/http.js';
 import { hit, get, set, storeReady } from '../_lib/store.js';
 import { mailReady, sendCode } from '../_lib/mail.js';
-import { normEmail, validEmail, newCode, storeCode, workspaceFor } from '../_lib/auth.js';
+import { normEmail, validEmail, newCode, storeCode, workspaceFor, isOps } from '../_lib/auth.js';
 
 const cleanDraft = (d) => {
   if (!d || typeof d !== 'object') return {};
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     if ((await hit('rl:start:em:' + email, 3600)) > 6) return send(res, 429, { error: 'too_many', message: 'Too many codes for this email. Try again in an hour.' });
 
     const existing = await workspaceFor(email);
-    if (body.mode === 'signin' && !existing) {
+    if (body.mode === 'signin' && !existing && !isOps(email)) {
       return send(res, 404, { error: 'no_workspace', message: 'There’s no workspace for ' + email + ' yet.' });
     }
     const name = String(body.name || '').trim().slice(0, 60);

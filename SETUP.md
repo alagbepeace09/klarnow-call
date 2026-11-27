@@ -19,7 +19,11 @@ The site reads real websites straight away. Real email codes and shared company 
    - `RESEND_API_KEY` = the key from step 4
    - `MAIL_FROM` = `Klaro Call <hello@mail.yourdomain.com>` (any address on the verified domain)
 
-## 3. Redeploy
+## 3. Klarnow team (phone numbers)
+
+Add `OPS_EMAILS` in Vercel → Environment Variables, with the Klarnow team emails separated by commas (e.g. `goodness@klarnow.co.uk, peace@example.com`). Those people can open **/ops**, sign in with their email, see every business that requested a number, and assign the real number. It then appears in that business's dashboard with Copy, Call and website snippets. Use **Mark live** only once Klaro really answers calls on that number.
+
+## 4. Redeploy
 
 Vercel → **Deployments** → latest → **Redeploy** (environment variables only apply to new deployments).
 

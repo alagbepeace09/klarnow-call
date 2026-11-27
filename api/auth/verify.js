@@ -1,6 +1,6 @@
 import { readBody, send, ipOf, sessionCookie, methodNotAllowed } from '../_lib/http.js';
 import { hit, storeReady } from '../_lib/store.js';
-import { normEmail, validEmail, checkCode, joinOrCreate, createSession, SESSION_DAYS, publicView } from '../_lib/auth.js';
+import { normEmail, validEmail, checkCode, joinOrCreate, createSession, SESSION_DAYS, publicView, isOps, workspaceFor } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res);
@@ -17,6 +17,11 @@ export default async function handler(req, res) {
         : r.reason === 'locked' ? 'Too many wrong tries. Send a new code.'
           : 'That code doesn’t match. ' + r.left + ' tr' + (r.left === 1 ? 'y' : 'ies') + ' left.';
       return send(res, 400, { error: r.reason, message: msg });
+    }
+    const hasDraft = r.rec.draft && r.rec.draft.bizName;
+    if (isOps(email) && !hasDraft && !(await workspaceFor(email))) {
+      const t = await createSession(email);
+      return send(res, 200, { ok: true, opsOnly: true, me: { email, name: email, role: 'ops' } }, { 'Set-Cookie': sessionCookie(t, SESSION_DAYS * 86400) });
     }
     const j = await joinOrCreate(email, r.rec.name, r.rec.draft, r.rec.now || undefined);
     const token = await createSession(email);

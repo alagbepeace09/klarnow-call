@@ -50,7 +50,10 @@ export async function joinOrCreate(email, name, draft, now) {
     const people = { [email]: { id: email, name: display, role: 'owner', team: 'Owner', email } };
     const state = initialWorkspace(draft || {}, people, email, now || new Date().toISOString(), false, false);
     const fresh = { id, domain: domainOf(email), personal: isPublicDomain(domainOf(email)), createdAt: Date.now(), owner: email, state };
-    if (await setNew('ws:' + id, fresh)) return { ws: fresh, role: 'owner', created: true };
+    if (await setNew('ws:' + id, fresh)) {
+      try { const idx = (await get('ws:index')) || []; if (idx.indexOf(id) < 0) { idx.unshift(id); await set('ws:index', idx.slice(0, 5000)); } } catch (e) { /* index is best effort */ }
+      return { ws: fresh, role: 'owner', created: true };
+    }
     ws = await get('ws:' + id);
   }
   const p = ws.state.people[email];
@@ -89,3 +92,6 @@ export async function endSession(req) {
 export function publicView(u) {
   return { signedIn: true, me: { email: u.email, name: u.me.name, role: u.me.role, team: u.me.team }, workspace: u.ws.state, personal: !!u.ws.personal, domain: u.ws.domain };
 }
+
+/** Klarnow team members who can assign numbers (comma-separated OPS_EMAILS in Vercel). */
+export const isOps = (email) => String(process.env.OPS_EMAILS || '').toLowerCase().split(/[\s,]+/).filter(Boolean).includes(String(email || '').toLowerCase());

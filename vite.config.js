@@ -10,7 +10,8 @@ function localApi() {
     '/api/auth/verify': './api/auth/verify.js',
     '/api/me': './api/me.js',
     '/api/logout': './api/logout.js',
-    '/api/workspace': './api/workspace.js'
+    '/api/workspace': './api/workspace.js',
+    '/api/ops': './api/ops.js'
   };
   return {
     name: 'klaro-local-api',
