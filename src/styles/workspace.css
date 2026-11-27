@@ -28,7 +28,7 @@ html[data-motion='reduce'] *, html[data-motion='reduce'] *::before, html[data-mo
 .sim-note .ic, .vf-sim .ic { margin-top: 2px; flex: none; }
 
 /* ---------- annotation dock ---------- */
-.ann-dock { position: fixed; right: 16px; bottom: 66px; z-index: 60; width: min(360px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 60px -24px rgba(0,0,0,.45); font-size: 13.5px; max-height: min(70vh, 620px); display: flex; flex-direction: column; }
+.ann-dock { position: fixed; right: 16px; bottom: 66px; z-index: 60; width: auto; max-width: min(360px, calc(100vw - 32px)); background: var(--surface); color: var(--ink); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 24px 60px -24px rgba(0,0,0,.45); font-size: 13.5px; max-height: min(70vh, 620px); display: flex; flex-direction: column; }
 .ann-dock-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: none; border: 0; cursor: pointer; text-align: left; color: inherit; font: inherit; width: 100%; }
 .ann-dock-head .n { font-family: var(--mono); font-size: 11px; background: var(--ink); color: var(--bg); border-radius: 6px; padding: 3px 6px; }
 .ann-dock-head b { font-weight: 600; flex: 1; }
@@ -305,3 +305,6 @@ html[data-motion='reduce'] .pf-timer, html[data-motion='reduce'] .kc-scanline { 
 html[data-motion='reduce'] .kc-story { animation: none !important; opacity: 1; transform: none; }
 html[data-motion='reduce'] .kc-wave i { height: 14px; }
 html[data-motion='reduce'] .ws-drawer { animation: none !important; }
+
+.ann-dock.open { width: min(360px, calc(100vw - 32px)); }
+.ann-dock:not(.open) .ann-dock-head { padding: 8px 12px; gap: 8px; }

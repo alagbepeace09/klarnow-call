@@ -35,7 +35,14 @@ const P = {
   scale: 'M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z',
   car: 'M5 16l1.5-6h11L19 16M3 16h18v3H3zM7 19v2M17 19v2M7.5 13h.01M16.5 13h.01',
   zap: 'M13 3L5 14h6l-1 7 8-11h-6z',
-  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z'
+  sparkle: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',
+  pause: 'M9 6v12M15 6v12',
+  out: 'M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10',
+  upright: 'M7 17L17 7M9 7h8v8',
+  dots: 'M6 12h.01M12 12h.01M18 12h.01',
+  filter: 'M4 6h16M7 12h10M10 18h4',
+  mail: 'M4 6h16v12H4zM4 7l8 6 8-6'
 };
 
 export default function Icon({ name, size, className = '', style, strokeWidth }) {
