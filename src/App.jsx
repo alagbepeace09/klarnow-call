@@ -4,6 +4,7 @@ import Flow from './Flow.jsx';
 import Verify from './Verify.jsx';
 import Workspace from './Workspace.jsx';
 import Ops from './Ops.jsx';
+import Klaro from './components/Klaro.jsx';
 import { useTheme } from './components/Brand.jsx';
 import { ReviewPanel, AnnotationDock } from './components/Review.jsx';
 import { initialWorkspace, reducer, hhmm } from './workspace/model.js';
@@ -138,7 +139,7 @@ export default function App() {
   } else if (route.view === 'signin' || (route.view === 'app' && checked && !session && !review)) {
     page = <Verify key={route.key} mode="signin" review={review} note={route.view === 'app' ? 'Sign in to open your workspace.' : null} onSetup={home} onHome={home} onBack={home} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
   } else if (route.view === 'app') {
-    if (!checked) page = <div className="kc adm" aria-busy="true" />;
+    if (!checked) page = <div className="kc adm adm-loading" aria-busy="true" role="status"><Klaro mood="working" size={84} decorative /><p>Opening your workspace…</p></div>;
     else if (session) {
       const effective = session.me.role === 'owner' ? role : 'member';
       page = <Workspace ws={session.workspace} apply={applyLive} live review={review} onExamples={exampleCalls} me={session.me.email} realRole={session.me.role} domain={session.domain} personal={session.personal}
