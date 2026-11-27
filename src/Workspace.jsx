@@ -35,13 +35,14 @@ function ReadOnly({ ann, what = 'change this enquiry' }) {
   );
 }
 
-function SampleNote({ ws, live, onSetup }) {
+function SampleNote({ ws, live, onSetup, onExamples, role }) {
   if (live) {
+    if (!ws.enquiries.length) return null;
     return (
       <div className="a-note" role="note">
         <span className="a-note-ic"><Icon name="info" size="sm" /></span>
-        <p><b>These calls are examples made for {ws.biz}.</b> They show how {ws.klaro} handles real ones. Your real calls appear here once your number is live.</p>
-        <span className="ap t-violet"><i />Sample calls</span>
+        <p><b>These are example calls made for {ws.biz}.</b> They’re here so you can try the dashboard. Real calls appear once your number is live.</p>
+        {role === 'owner' && onExamples ? <button className="ab ab-light" onClick={() => onExamples(false)}>Remove examples</button> : <span className="ap t-violet"><i />Examples</span>}
       </div>
     );
   }
@@ -54,9 +55,104 @@ function SampleNote({ ws, live, onSetup }) {
   );
 }
 
+function EmptyCalls({ ws, role, onExamples }) {
+  return (
+    <div className="a-card a-empty-big">
+      <Klaro mood="welcome" size={96} decorative />
+      <div>
+        <h2>No calls yet</h2>
+        <p className="a-p">Calls appear here the moment {ws.klaro} answers one for {ws.biz}. Nothing is live until your phone number is connected.</p>
+        {role === 'owner' && onExamples && <div className="a-actions" style={{ marginTop: 14 }}><button className="ab ab-dark" onClick={() => onExamples(true)}>Load example calls to try it</button></div>}
+      </div>
+    </div>
+  );
+}
+
+function FirstRun({ ws, role, me, go, onExamples, domain, personal }) {
+  const [copied, setCopied] = useState(false);
+  const hour = Math.floor(ws.clock / 60);
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const team = Object.values(PEOPLE);
+  const link = (typeof window !== 'undefined' ? window.location.origin : '') + '/signin';
+  const copy = () => { try { navigator.clipboard.writeText(link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); }); } catch (e) { /* clipboard unavailable */ } };
+  return (
+    <div className="a-page">
+      <header className="a-head">
+        <div>
+          <p className="a-eyebrow">{ws.todayLong} · Command Centre</p>
+          <h1>{greet}, {first(me.name)}</h1>
+          <p className="a-sub">This is <b>{ws.biz}</b>’s workspace. {role === 'owner' ? 'You own it.' : 'You’re a member, so you can see everything here.'}</p>
+        </div>
+      </header>
+
+      <div className="a-bento">
+        <section className="a-card a-tonight">
+          <div className="a-card-top"><h2>Your receptionist</h2><span className="ap t-green"><i />Saved</span></div>
+          <div className="a-rcpt">
+            <Klaro mood="success" size={92} decorative />
+            <div><b>{ws.klaro} for {ws.biz}</b><span>{ws.url ? 'Learned from ' + ws.url : 'Set up from your details'}</span></div>
+          </div>
+          <div className="a-chips">{(ws.services || []).slice(0, 4).map((x) => <span key={x}>{x}</span>)}{(ws.services || []).length > 4 && <span>+{ws.services.length - 4} more</span>}</div>
+          <div className="a-latest" role="note"><Icon name="info" size="sm" /><span>Changing what {ws.klaro} says (Klaro Studio) is planned for the next review.</span></div>
+        </section>
+
+        <section className="a-card a-glow">
+          <div className="a-card-top"><h2>Calls</h2></div>
+          <div className="a-glow-num"><span className="dotnum">00</span><span>calls yet</span></div>
+          <p className="a-glow-p">Every call {ws.klaro} answers shows up here with a summary, and anything that needs a person goes to Needs You.</p>
+          {role === 'owner' && onExamples
+            ? <button className="a-glow-foot" onClick={() => onExamples(true)}><span><b>Load example calls</b>Try the dashboard with made-up calls for {ws.biz}</span><Icon name="arrow" size="sm" /></button>
+            : <p className="a-glow-foot calm">Nothing is live until the phone number is connected.</p>}
+        </section>
+
+        <section className="a-card a-dark">
+          <div className="a-card-top"><h2>Phone number</h2><span className="ap t-amber on-dark"><i />Not live</span></div>
+          <p className="a-dark-t">Next: connect a number</p>
+          <p className="a-dark-p">Forward the number customers already call, or get a new one. Calls reach {ws.klaro} only after this step.</p>
+          <div className="a-dark-foot">
+            <span className="a-mute">Saved · {ws.savedAt}</span>
+            {role === 'owner' ? <button className="ab ab-white" onClick={() => go('/app/number')}>Set up a number<Icon name="arrow" size="sm" /></button> : <span className="a-mute">An owner sets this up</span>}
+          </div>
+        </section>
+      </div>
+
+      <div className="a-two">
+        <section className="a-card">
+          <div className="a-card-top"><h2>How this works</h2></div>
+          <ol className="a-steps">
+            <li className="done"><span>1</span><div><b>{ws.klaro} is saved</b><p>Linked to your work email. This dashboard is yours.</p></div></li>
+            <li><span>2</span><div><b>Connect a phone number</b><p>Forward your number or get a new one, then run a test call.</p></div></li>
+            <li><span>3</span><div><b>{ws.klaro} answers your calls</b><p>Each call lands in Calls & Enquiries with a summary.</p></div></li>
+            <li><span>4</span><div><b>Your team follows up</b><p>Anything {ws.klaro} can’t finish goes to Needs You for a person.</p></div></li>
+          </ol>
+        </section>
+        <section className="a-card">
+          <div className="a-card-top"><h2>Team</h2><span className="a-mute sm">{team.length} {team.length === 1 ? 'person' : 'people'}</span></div>
+          <div className="a-sunk">
+            {team.map((p) => (
+              <div key={p.id} className="a-row static">
+                <span className="a-av sm">{initials(p.name).slice(0, 2)}</span>
+                <span className="m"><b>{p.name}{p.id === me.id ? ' (you)' : ''}</b><span>{p.email}</span></span>
+                <span className={'ap ' + (p.role === 'owner' ? 't-violet' : 't-grey')}><i />{p.role === 'owner' ? 'Owner' : 'Member'}</span>
+              </div>
+            ))}
+          </div>
+          {!personal ? (
+            <div className="a-invite">
+              <p className="a-fine">To add colleagues, send them the sign-in link. Anyone who signs in with an <b>@{domain}</b> email joins this workspace as a member.</p>
+              <button className="ab ab-light" onClick={copy}>{copied ? 'Link copied' : 'Copy sign-in link'}</button>
+            </div>
+          ) : <p className="a-fine" style={{ marginTop: 12 }}>This is a personal workspace (signed in with a personal email), so it isn’t shared. Sign in with a company email to work as a team.</p>}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- 05 Command Centre ---------- */
-function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup }) {
+function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup, onExamples, domain, personal }) {
   const c = counts(ws);
+  if (live && !ws.enquiries.length) return <FirstRun ws={ws} role={role} me={me} go={go} onExamples={onExamples} domain={domain} personal={personal} />;
   const openNeeds = ws.needs.filter((n) => n.state !== 'resolved');
   const lead = openNeeds[0] && ws.enquiries.find((e) => e.id === openNeeds[0].enquiry);
   const today = ws.enquiries.filter((e) => e.day === ws.today).sort((a, b) => (a.received < b.received ? 1 : -1));
@@ -79,7 +175,7 @@ function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup }) {
         <Tag kind="demo" show={ann} label="Sample workspace data" />
       </header>
 
-      <SampleNote ws={ws} live={live} onSetup={onSetup} />
+      <SampleNote ws={ws} live={live} onSetup={onSetup} onExamples={onExamples} role={role} />
 
       <div className="a-bento">
         <section className="a-card a-tonight">
@@ -169,7 +265,7 @@ function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup }) {
 }
 
 /* ---------- 07 Calls & Enquiries ---------- */
-function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann, live, onSetup }) {
+function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann, live, onSetup, onExamples }) {
   const needle = q.trim().toLowerCase();
   const list = ws.enquiries.filter((e) => {
     if (needle && !(e.customer + ' ' + e.topic + ' ' + e.phone).toLowerCase().includes(needle)) return false;
@@ -185,8 +281,9 @@ function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann, live, onSetup
         <div><p className="a-eyebrow">Calls & Enquiries</p><h1>Every call, and what happens next</h1></div>
         <Tag kind="demo" show={ann} label="Sample calls" />
       </header>
-      <SampleNote ws={ws} live={live} onSetup={onSetup} />
-      <div className="a-card a-table-card">
+      <SampleNote ws={ws} live={live} onSetup={onSetup} onExamples={onExamples} role={role} />
+      {!ws.enquiries.length && <EmptyCalls ws={ws} role={role} onExamples={onExamples} />}
+      {ws.enquiries.length > 0 && <div className="a-card a-table-card">
         <div className="a-card-top">
           <div className="a-seg" role="tablist" aria-label="Filter enquiries">
             {tabs.map((f) => <button key={f[0]} role="tab" aria-selected={filter === f[0]} className={filter === f[0] ? 'on' : ''} onClick={() => setFilter(f[0])}>{f[1]}</button>)}
@@ -206,7 +303,7 @@ function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann, live, onSetup
             </button>
           ))}
         </div>
-      </div>
+      </div>}
       {role === 'member' && <p className="a-fine">You can see every enquiry. Owners and admins assign and close them.</p>}
     </div>
   );
@@ -542,7 +639,7 @@ function NextReview({ which, go, role }) {
 }
 
 /* ---------- shell ---------- */
-export default function Workspace({ ws, apply, live, me, realRole, domain, personal, role, setRole, view, enquiryId, filter, go, sim, onHome, onSetup, onSignOut, theme, onToggleTheme, motion, ann }) {
+export default function Workspace({ ws, apply, live, review, onExamples, me, realRole, domain, personal, role, setRole, view, enquiryId, filter, go, sim, onHome, onSetup, onSignOut, theme, onToggleTheme, motion, ann }) {
   PEOPLE = ws.people || {};
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -550,7 +647,7 @@ export default function Workspace({ ws, apply, live, me, realRole, domain, perso
   const searchRef = useRef(null);
   const c = counts(ws);
   const meP = PEOPLE[me] || { id: me, name: 'You', role: realRole, team: '' };
-  const canPreview = !live || realRole === 'owner';
+  const canPreview = !!review && (!live || realRole === 'owner');
   const e = enquiryId ? ws.enquiries.find((x) => x.id === enquiryId) : null;
   const base = view === 'needs' ? '/app/needs-you' : view === 'home' ? '/app' : '/app/enquiries';
   const openEnq = (id) => go(base + '?e=' + id);
@@ -575,6 +672,8 @@ export default function Workspace({ ws, apply, live, me, realRole, domain, perso
       .catch((err) => flash((err && err.message) || 'Couldn’t save. Nothing changed. Try again.', 'bad'))
       .finally(() => setSaving(false));
   };
+
+  const examples = onExamples && role === 'owner' ? (on) => onExamples(on).then(() => flash(on ? 'Example calls added. Remove them any time.' : 'Example calls removed.', 'ok')).catch((err) => flash((err && err.message) || 'Couldn’t change the examples. Try again.', 'bad')) : null;
 
   const nav = [
     ['home', '/app', 'Command Centre', 'grid'],
@@ -646,15 +745,15 @@ export default function Workspace({ ws, apply, live, me, realRole, domain, perso
                   <button className={role === 'owner' ? 'on' : ''} aria-pressed={role === 'owner'} onClick={() => setRole('owner')}>Owner/admin</button>
                   <button className={role === 'member' ? 'on' : ''} aria-pressed={role === 'member'} onClick={() => setRole('member')}>{live ? 'Preview as member' : 'Member'}</button>
                 </div>
-              ) : <span className="ap t-grey"><i />Member · view only</span>}
+              ) : <span className={'ap ' + (realRole === 'owner' ? 't-violet' : 't-grey')}><i />{realRole === 'owner' ? 'Owner/admin' : 'Member · view only'}</span>}
               <button className="a-circle" onClick={() => go('/app/needs-you')} aria-label={'Needs You, ' + c.needsOpen + ' open'}><Icon name="bell" size="sm" />{c.needsOpen > 0 && <b className="badge">{c.needsOpen}</b>}</button>
               {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} className="a-theme" />}
             </div>
           </div>
 
           <main className="adm-content" id="main-content">
-            {view === 'home' && <CommandCentre ws={ws} role={role} me={meP} go={go} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} />}
-            {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} />}
+            {view === 'home' && <CommandCentre ws={ws} role={role} me={meP} go={go} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} domain={domain} personal={personal} />}
+            {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} />}
             {view === 'needs' && <NeedsYou ws={ws} role={role} save={save} saving={saving} openEnq={openEnq} ann={ann} />}
             {(view === 'number' || view === 'studio') && <NextReview which={view} go={go} role={role} />}
           </main>

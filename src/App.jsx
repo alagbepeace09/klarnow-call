@@ -27,6 +27,7 @@ function readRoute() {
     return { view: 'flow', init: { url: site || (state && state !== 'restore' ? 'canalstreetkitchen.co.uk' : ''), manual: !site && !state, state }, key };
   }
   if (path === '/save') return { view: 'save', key };
+  if (path === '/signin') return { view: 'signin', key };
   if (path.startsWith('/app')) {
     const sub = path.split('/')[2] || '';
     const ws = { '': 'home', enquiries: 'enquiries', 'needs-you': 'needs', number: 'number', studio: 'studio' }[sub] || 'home';
@@ -94,6 +95,7 @@ export default function App() {
   const home = () => go('/', { fresh: true });
   const onSave = (d) => { setDraft(d); store.set('kc-draft', d); go('/save'); };
   const onVerified = (r) => { setSession({ signedIn: true, me: r.me, workspace: r.workspace, personal: r.personal, domain: r.domain }); setRole(r.me.role); go('/app'); };
+  const exampleCalls = (on) => applyLive({ type: on ? 'load-examples' : 'clear-examples' });
   const onPreviewDone = () => { setRole('owner'); go('/app'); };
   const signOut = () => fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }).finally(() => { setSession(null); go('/', { fresh: true }); });
 
@@ -115,32 +117,34 @@ export default function App() {
   }, 600));
 
   const reset = () => {
-    if (session && session.me.role === 'owner') applyLive({ type: 'reset-samples' }).catch(() => {});
+    if (session && session.me.role === 'owner') applyLive({ type: 'load-examples' }).catch(() => {});
     else dispatch({ type: 'reset' });
     if (!session) setRole('owner');
     setSim({ scan: 'success', call: 'answered', email: 'fail-once', save: 'ok' });
   };
 
-  const screen = route.view === 'landing' ? '01' : route.view === 'flow' ? flowScreen : route.view === 'save' ? '04' : SCREEN[route.ws];
+  const screen = route.view === 'landing' ? '01' : route.view === 'flow' ? flowScreen : route.view === 'save' || route.view === 'signin' ? '04' : SCREEN[route.ws];
   const common = { theme, onToggleTheme: toggleTheme, motion, ann: review && ann };
 
   let page;
   if (route.view === 'flow') {
     page = <Flow key={route.key} init={route.init} draft={draft} onHome={home} onSave={onSave} sim={sim} review={review} onScreen={(s) => setFlowScreen(s)} {...common} />;
   } else if (route.view === 'save') {
-    page = <Verify key={route.key} draft={draft} onHome={home} onBack={() => go(draft ? '/start?state=restore' : '/start', { fresh: true })} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
+    page = <Verify key={route.key} draft={draft} review={review} onSetup={home} onHome={home} onBack={() => go(draft ? '/start?state=restore' : '/start', { fresh: true })} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
+  } else if (route.view === 'signin' || (route.view === 'app' && checked && !session && !review)) {
+    page = <Verify key={route.key} mode="signin" review={review} note={route.view === 'app' ? 'Sign in to open your workspace.' : null} onSetup={home} onHome={home} onBack={home} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
   } else if (route.view === 'app') {
     if (!checked) page = <div className="kc adm" aria-busy="true" />;
     else if (session) {
       const effective = session.me.role === 'owner' ? role : 'member';
-      page = <Workspace ws={session.workspace} apply={applyLive} live me={session.me.email} realRole={session.me.role} domain={session.domain} personal={session.personal}
-        role={effective} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} go={go} sim={sim} onHome={home} onSetup={() => start('', true)} onSignOut={signOut} {...common} />;
+      page = <Workspace ws={session.workspace} apply={applyLive} live review={review} onExamples={exampleCalls} me={session.me.email} realRole={session.me.role} domain={session.domain} personal={session.personal}
+        role={effective} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} go={go} sim={review ? sim : { ...sim, email: 'ok' }} onHome={home} onSetup={() => start('', true)} onSignOut={signOut} {...common} />;
     } else {
-      page = <Workspace ws={sample} apply={applySample} live={false} me={role === 'member' ? 'tolu' : 'dami'} realRole={role}
+      page = <Workspace ws={sample} apply={applySample} live={false} review={review} me={role === 'member' ? 'tolu' : 'dami'} realRole={role}
         role={role} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} go={go} sim={sim} onHome={home} onSetup={() => go('/', { fresh: true })} onSignOut={home} {...common} />;
     }
   } else {
-    page = <Landing key={route.key} onStart={start} signedIn={!!session} onOpenApp={() => go('/app')} {...common} />;
+    page = <Landing key={route.key} onStart={start} signedIn={!!session} onOpenApp={() => go('/app')} onSignIn={() => go('/signin')} {...common} />;
   }
 
   return (

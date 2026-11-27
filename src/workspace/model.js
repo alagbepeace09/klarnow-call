@@ -95,7 +95,7 @@ function stories(kind, biz, klaro, now) {
  * draft: { bizName, klaroName, kind, services, testCall, url, ... }
  * people: { id: { name, role: 'owner'|'member', team, email } }
  */
-export function initialWorkspace(draft, people, ownerId, nowInput, sample) {
+export function initialWorkspace(draft, people, ownerId, nowInput, sample, examples) {
   const now = nowInput ? new Date(nowInput) : SAMPLE_NOW;
   const isSample = sample !== false && !people;
   const P = people || SAMPLE_PEOPLE;
@@ -108,14 +108,15 @@ export function initialWorkspace(draft, people, ownerId, nowInput, sample) {
   const ownerName = P[owner] ? P[owner].name : 'Owner';
   const L = S.lead;
   const lf = first(L.customer);
-  return {
+  const ws = {
     sample: isSample,
+    examples: examples !== false,
     biz, klaro, kind, team: S.team, url: (draft && draft.url) || '',
     services: (draft && draft.services) || [],
     people: P, owner,
     today: dayLabel(now), todayLong: longLabel(now),
     clock: now.getHours() * 60 + now.getMinutes(),
-    savedAt: hhmm(addMin(now, -15)),
+    savedAt: isSample ? hhmm(addMin(now, -15)) : hhmm(now),
     number: 'none',
     demoCall: (draft && draft.testCall) || 'none',
     enquiries: [
@@ -173,6 +174,15 @@ export function initialWorkspace(draft, people, ownerId, nowInput, sample) {
       { id: 'n3', enquiry: 'e4', reason: S.past.need, priority: 'Low', owner, next: null, state: 'resolved', opened: DAYS[tPast.getDay()] + ' ' + hhmm(addMin(tPast, 1)), resolution: S.past.outcome + ' · ' + ownerName + ' · ' + DAYS[tPast.getDay()] + ' ' + hhmm(addMin(tPast, 22)) }
     ]
   };
+  if (examples === false) { ws.enquiries = []; ws.needs = []; }
+  return ws;
+}
+
+/** Owner actions on the example calls: add them to explore, or clear them. */
+export function withExamples(s, on, nowIso) {
+  if (!on) return { ...s, examples: false, enquiries: [], needs: [] };
+  const fresh = initialWorkspace({ bizName: s.biz, klaroName: s.klaro, kind: s.kind, services: s.services, url: s.url, testCall: s.demoCall }, s.people, s.owner, nowIso || new Date().toISOString(), false, true);
+  return { ...s, examples: true, enquiries: fresh.enquiries, needs: fresh.needs, today: fresh.today, todayLong: fresh.todayLong, clock: fresh.clock };
 }
 
 const upd = (list, id, fn) => list.map((x) => (x.id === id ? fn(x) : x));

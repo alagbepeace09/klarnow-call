@@ -446,3 +446,26 @@ html[data-motion='reduce'] .a-drawer, html[data-motion='reduce'] .a-toast { anim
 .adm-side-foot .a-link { align-self: flex-start; font-size: 13px; }
 .a-grid.one { grid-template-columns: 1fr; }
 @media (max-width: 720px) { .a-note { border-radius: 22px; } }
+
+/* first run (new workspace, no calls yet) */
+.a-rcpt { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: var(--a-r-m); background: var(--a-sunk); border: 1px solid var(--a-line); }
+.a-rcpt b { display: block; font-weight: 500; font-size: 16px; letter-spacing: -.01em; }
+.a-rcpt span { font-size: 13px; color: var(--a-muted); }
+.a-tonight .a-latest { margin: auto 0 0; cursor: default; box-shadow: none; }
+.a-glow-p { margin: 8px 0 18px; font-size: 14px; line-height: 1.55; color: rgba(255,255,255,.85); position: relative; z-index: 1; }
+.a-glow .a-glow-foot { margin-top: auto; }
+.a-glow { display: flex; flex-direction: column; }
+.a-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.a-steps li { display: grid; grid-template-columns: 32px 1fr; gap: 12px; padding: 10px 4px; align-items: start; }
+.a-steps li > span { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12.5px; background: var(--a-sunk); border: 1px solid var(--a-line); color: var(--a-muted); }
+.a-steps li.done > span { background: #3cc46f; border-color: #3cc46f; color: #fff; }
+.a-steps b { font-weight: 500; font-size: 14.5px; }
+.a-steps p { margin: 2px 0 0; font-size: 13.5px; color: var(--a-muted); line-height: 1.45; }
+.a-row.static { cursor: default; }
+.a-row.static:hover { background: none; box-shadow: none; }
+.a-invite { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+.a-invite .a-fine { flex: 1; min-width: 220px; }
+.a-empty-big { display: flex; align-items: center; gap: 22px; padding: 28px; }
+.a-empty-big h2 { margin: 0 0 6px; font-size: 24px; font-weight: 400; letter-spacing: -.03em; }
+@media (max-width: 720px) { .a-empty-big { flex-direction: column; align-items: flex-start; } }
+.a-tonight .a-latest > span { white-space: normal; }

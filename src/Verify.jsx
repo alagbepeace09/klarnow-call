@@ -20,13 +20,15 @@ async function post(url, body) {
 }
 
 /** 04 Email + code. Sends a real code by email; keeps the draft from 02/03 through verification. */
-export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, theme, onToggleTheme, motion, ann }) {
+export default function Verify({ mode: flow = 'save', draft, review, note, onHome, onBack, onSetup, onDone, onPreviewDone, theme, onToggleTheme, motion, ann }) {
+  const signin = flow === 'signin';
   const [step, setStep] = useState('email'); // email | sending | code | checking | expired | done
   const [mode, setMode] = useState('live'); // live | preview (only when email sign-in isn't switched on)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [emailErr, setEmailErr] = useState('');
   const [notReady, setNotReady] = useState('');
+  const [noWs, setNoWs] = useState('');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [codeErr, setCodeErr] = useState('');
   const [wait, setWait] = useState(0);
@@ -55,7 +57,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
     setEmailErr(''); setCodeErr('');
     if (mode === 'preview') { setStep('sending'); setTimeout(() => toCode(), 700); if (again) setResent(resent + 1); return; }
     setStep(again ? 'code' : 'sending');
-    const r = await post('/api/auth/start', { email: email.trim(), name: name.trim(), draft: d, now: localIso() });
+    const r = await post('/api/auth/start', { email: email.trim(), name: name.trim(), draft: signin ? null : d, now: localIso(), mode: signin ? 'signin' : 'save' });
     if (r.ok) {
       setJoining(r.joining || null); setDevCode(r.devCode || '');
       toCode(r);
@@ -63,6 +65,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
       return;
     }
     if (r.error === 'email_not_configured' || r.error === 'storage_not_configured') { setNotReady(r.message); setStep('email'); return; }
+    if (r.error === 'no_workspace') { setNoWs(r.message); setStep('email'); return; }
     if (again) { setStep('code'); setCodeErr(r.message || 'We couldn’t send a new code. Try again in a moment.'); if (r.retryIn) setWait(r.retryIn); return; }
     setStep('email'); setEmailErr(r.message || 'We couldn’t send the code. Try again.');
   };
@@ -112,7 +115,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
     <div className={'kc' + (motion === 'reduce' ? ' rm' : '')}>
       <header className="kc-top">
         <Brand onClick={(e) => { e.preventDefault(); onHome(); }} />
-        <div className="kc-top-mid"><span className="kc-chip"><Icon name="shield" size="sm" /><span>Save your receptionist</span></span></div>
+        <div className="kc-top-mid"><span className="kc-chip"><Icon name="shield" size="sm" /><span>{signin ? 'Sign in' : 'Save your receptionist'}</span></span></div>
         <div className="kc-top-right">
           <span className="kc-pill pill-neutral"><span className="dot" />Not live yet</span>
           {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} />}
@@ -121,30 +124,38 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
 
       <main className="vf">
         <section className="vf-main">
-          <button className="back" onClick={onBack}><Icon name="back" size="sm" /><span>Back to {kname}</span></button>
+          <button className="back" onClick={onBack}><Icon name="back" size="sm" /><span>{signin ? 'Back to home' : 'Back to ' + kname}</span></button>
 
           {(step === 'email' || step === 'sending') && (
             <form onSubmit={send} noValidate>
-              <span className="kc-kicker">Step 4 of 6 · Save {kname}</span>
-              <h1>Where should we send your code?</h1>
-              <p className="vf-lead">We’ll email you a 6-digit code. Enter it here to save {kname} for {biz}. No password needed.</p>
+              <span className="kc-kicker">{signin ? 'Sign in' : 'Step 4 of 6 · Save ' + kname}</span>
+              <h1>{signin ? 'Sign in to your workspace' : 'Where should we send your code?'}</h1>
+              <p className="vf-lead">{signin ? 'Enter the work email you used when you set up Klaro. We’ll email you a 6-digit code. No password needed.' : 'We’ll email you a 6-digit code. Enter it here to save ' + kname + ' for ' + biz + '. This email is what links you to your workspace. No password needed.'}</p>
+              {note && <div className="kc-banner banner-info"><span className="ico"><Icon name="info" size="sm" /></span><div>{note}</div></div>}
+              {noWs && (
+                <div className="kc-banner banner-warn" role="alert"><span className="ico"><Icon name="alert" size="sm" /></span>
+                  <div><b>{noWs}</b> Set up a receptionist first and save it with this email, or check you typed the email you used before.
+                    <div className="vf-row"><button type="button" className="btn btn-dark btn-sm" onClick={onSetup}>Set up a receptionist</button></div>
+                  </div>
+                </div>
+              )}
               {notReady && mode === 'live' && (
                 <div className="kc-banner banner-warn" role="alert">
                   <span className="ico"><Icon name="alert" size="sm" /></span>
                   <div>
-                    <b>Email sign-in isn’t switched on for this site yet.</b> {notReady} You can still look around with a preview code; nothing will be saved to an account.
-                    <div className="vf-row"><button type="button" className="btn btn-dark btn-sm" onClick={() => { setMode('preview'); setNotReady(''); }}>Continue with a preview code</button></div>
+                    <b>Email sign-in isn’t switched on for this site yet.</b> {notReady} {review ? 'For review, you can continue with a preview code; nothing will be saved to an account.' : 'Please try again a little later.'}
+                    {review && <div className="vf-row"><button type="button" className="btn btn-dark btn-sm" onClick={() => { setMode('preview'); setNotReady(''); }}>Continue with a preview code</button></div>}
                   </div>
                 </div>
               )}
-              <div className="kc-field">
+              {!signin && <div className="kc-field">
                 <label className="kc-label" htmlFor="vf-name">Your name <span className="vf-opt">Optional</span></label>
                 <input id="vf-name" className="kc-input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="So your team knows who did what" />
-              </div>
+              </div>}
               <div className="kc-field">
                 <label className="kc-label" htmlFor="vf-email">Work email</label>
                 <input id="vf-email" className={'kc-input' + (emailErr ? ' bad' : '')} type="email" autoComplete="email" inputMode="email" value={email}
-                  onChange={(e) => { setEmail(e.target.value); setEmailErr(''); }} aria-invalid={!!emailErr} aria-describedby={emailErr ? 'vf-email-err' : 'vf-email-hint'} placeholder="you@yourbusiness.co.uk" />
+                  onChange={(e) => { setEmail(e.target.value); setEmailErr(''); setNoWs(''); }} aria-invalid={!!emailErr} aria-describedby={emailErr ? 'vf-email-err' : 'vf-email-hint'} placeholder="you@yourbusiness.co.uk" />
                 {emailErr ? <div id="vf-email-err" className="kc-field-err vf-err" role="alert"><Icon name="alert" size="sm" />{emailErr}</div>
                   : <div id="vf-email-hint" className="vf-hint">Use your work email. Colleagues who sign in with the same company email join the same workspace.</div>}
               </div>
@@ -164,7 +175,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
 
           {(step === 'code' || step === 'checking') && (
             <form onSubmit={check} noValidate>
-              <span className="kc-kicker">Step 4 of 6 · Check your email</span>
+              <span className="kc-kicker">{signin ? 'Sign in' : 'Step 4 of 6'} · Check your email</span>
               <h1>Enter the 6-digit code</h1>
               <p className="vf-lead">{mode === 'preview' ? 'In preview mode no email is sent.' : <>We sent it to <b>{email.trim()}</b>.</>} <button type="button" className="vf-link" onClick={() => setStep('email')}>Change email</button></p>
               {joining && <div className="kc-banner banner-info"><span className="ico"><Icon name="info" size="sm" /></span><div><b>Your company already has a workspace: {joining}.</b> You’ll join it as a team member. Your draft won’t replace theirs.</div></div>}
@@ -195,10 +206,10 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
 
           {step === 'expired' && (
             <div>
-              <span className="kc-kicker">Step 4 of 6 · New code needed</span>
+              <span className="kc-kicker">{signin ? 'Sign in' : 'Step 4 of 6'} · New code needed</span>
               <h1>That code no longer works</h1>
-              <p className="vf-lead">{codeErr || 'Codes last 10 minutes.'} Send a new one to <b>{email.trim()}</b>. Your draft stays exactly as it is.</p>
-              <div className="kc-banner banner-warn" role="status"><span className="ico"><Icon name="clock" size="sm" /></span><div><b>Nothing was lost.</b> {kname}’s name, services, greeting and test call are still here.<Tag kind="recovery" show={ann} /></div></div>
+              <p className="vf-lead">{codeErr || 'Codes last 10 minutes.'} Send a new one to <b>{email.trim()}</b>.{signin ? '' : ' Your draft stays exactly as it is.'}</p>
+              {!signin && <div className="kc-banner banner-warn" role="status"><span className="ico"><Icon name="clock" size="sm" /></span><div><b>Nothing was lost.</b> {kname}’s name, services, greeting and test call are still here.<Tag kind="recovery" show={ann} /></div></div>}
               <div className="vf-row">
                 <button className="btn btn-primary" onClick={() => send(null, true)}>Send a new code<span className="arr"><Icon name="arrow" size="sm" /></span></button>
                 <button className="btn btn-ghost" onClick={() => setStep('email')}><span>Use a different email</span></button>
@@ -208,13 +219,14 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
 
           {step === 'done' && result && (
             <div>
-              <span className="kc-kicker">Step 4 of 6 · Saved</span>
-              <h1>{result.joined ? 'You’ve joined ' + wsBiz : kname + ' is saved'}</h1>
+              <span className="kc-kicker">{signin ? 'Signed in' : 'Step 4 of 6 · Saved'}</span>
+              <h1>{result.joined ? 'You’ve joined ' + wsBiz : signin || !result.created ? 'Welcome back to ' + wsBiz : kname + ' is saved'}</h1>
               <p className="vf-lead">
                 {result.preview ? 'Preview only: this opens a sample workspace.'
                   : result.joined ? 'Your email is verified and you’re now part of the ' + wsBiz + ' workspace.'
-                    : 'Your email is verified and ' + kname + ' is saved to the ' + wsBiz + ' workspace.'}
-                {' '}Nothing is live yet. Callers won’t reach {kname} until a number is active.
+                    : signin || !result.created ? 'Your email is verified. Your workspace is exactly as you left it.'
+                      : 'Your email is verified and ' + kname + ' is saved. This is now ' + wsBiz + '’s workspace, and you’re its owner.'}
+                {' '}Anyone who signs in with a work email from the same company joins it.
               </p>
               <div className="vf-role">
                 <span className="vf-av">{(result.me && result.me.name ? result.me.name : 'You').split(' ').map((w) => w[0]).join('').slice(0, 2)}</span>
@@ -230,6 +242,19 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
           )}
         </section>
 
+        {signin ? (
+          <aside className="vf-side" aria-label="How sign-in works">
+            <div className="vf-klaro"><Klaro mood={mood} size={150} decorative /></div>
+            <div className="vf-draft">
+              <div className="vf-draft-head"><b>How your workspace is linked</b></div>
+              <dl>
+                <div><dt>Your email</dt><dd>Your work email is your key. No password.</dd></div>
+                <div><dt>Your company</dt><dd>Everyone with the same company email (for example @yourbusiness.co.uk) sees the same workspace.</dd></div>
+                <div><dt>Owner</dt><dd>The first person to save Klaro owns it. Colleagues join as members.</dd></div>
+              </dl>
+            </div>
+          </aside>
+        ) : (
         <aside className="vf-side" aria-label="Your draft">
           <div className="vf-klaro"><Klaro mood={mood} size={150} decorative /></div>
           <div className="vf-draft">
@@ -245,6 +270,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
             <Tag kind="pending" show={ann} label="Draft preserved through verification" />
           </div>
         </aside>
+        )}
       </main>
     </div>
   );

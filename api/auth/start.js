@@ -28,9 +28,12 @@ export default async function handler(req, res) {
     if (wait) return send(res, 429, { error: 'wait', message: 'A code was just sent. You can ask for a new one in a few seconds.', retryIn: 30 });
     if ((await hit('rl:start:em:' + email, 3600)) > 6) return send(res, 429, { error: 'too_many', message: 'Too many codes for this email. Try again in an hour.' });
 
+    const existing = await workspaceFor(email);
+    if (body.mode === 'signin' && !existing) {
+      return send(res, 404, { error: 'no_workspace', message: 'There’s no workspace for ' + email + ' yet.' });
+    }
     const name = String(body.name || '').trim().slice(0, 60);
     const draft = cleanDraft(body.draft);
-    const existing = await workspaceFor(email);
     const code = newCode();
     await storeCode(email, code, { name, draft, now: String(body.now || '').slice(0, 25) });
     await set('otpwait:' + email, 1, 30);

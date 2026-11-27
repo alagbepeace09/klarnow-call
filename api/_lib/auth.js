@@ -48,7 +48,7 @@ export async function joinOrCreate(email, name, draft, now) {
   let ws = await get('ws:' + id);
   if (!ws) {
     const people = { [email]: { id: email, name: display, role: 'owner', team: 'Owner', email } };
-    const state = initialWorkspace(draft || {}, people, email, now || new Date().toISOString(), false);
+    const state = initialWorkspace(draft || {}, people, email, now || new Date().toISOString(), false, false);
     const fresh = { id, domain: domainOf(email), personal: isPublicDomain(domainOf(email)), createdAt: Date.now(), owner: email, state };
     if (await setNew('ws:' + id, fresh)) return { ws: fresh, role: 'owner', created: true };
     ws = await get('ws:' + id);

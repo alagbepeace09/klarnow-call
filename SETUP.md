@@ -28,7 +28,8 @@ Vercel → **Deployments** → latest → **Redeploy** (environment variables on
 - **Codes:** 6 digits, valid 10 minutes, 5 tries, new code after 30 seconds, max 6 codes per email per hour.
 - **Workspaces:** the first person who signs in with a company email (e.g. `@canalstreetkitchen.co.uk`) becomes the **owner** and their setup becomes the workspace. Colleagues who sign in later with the same company domain join as **members** (view only). Gmail, Outlook, iCloud and similar addresses get a personal workspace.
 - **Sessions:** 30 days, stored as a secure, http-only cookie.
-- **Sample calls:** until a phone number is live, the workspace shows example calls made for that business, clearly labelled. The test call in step 03 is still a simulation.
+- **New workspaces start empty** (no calls until a number is live). Owners can load clearly labelled example calls to try the dashboard, and remove them again. Step 03 plays an example call in the browser; nothing is dialled.
+- **Coming back:** “Sign in” on the landing page (or /signin) → work email → code → straight into the workspace. Opening /app while signed out asks you to sign in.
 - **Review tools:** hidden for normal visitors. Add `?review=1` to any address to show them (remembered in that browser), `?review=0` to hide them again.
 
 ## Local development
