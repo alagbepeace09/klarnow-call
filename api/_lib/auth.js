@@ -61,6 +61,7 @@ export async function joinOrCreate(email, name, draft, now) {
     if (name && name.trim() && p.name !== name.trim()) { p.name = name.trim().slice(0, 60); await set('ws:' + id, ws); }
     return { ws, role: p.role, created: false };
   }
+  if ((ws.state.removed || []).includes(email)) return { ws, role: null, removed: true };
   ws.state.people[email] = { id: email, name: display, role: 'member', team: ws.state.team || 'Team', email };
   await set('ws:' + id, ws);
   return { ws, role: 'member', created: false, joined: true };

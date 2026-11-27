@@ -95,6 +95,41 @@ function stories(kind, biz, klaro, now) {
  * draft: { bizName, klaroName, kind, services, testCall, url, ... }
  * people: { id: { name, role: 'owner'|'member', team, email } }
  */
+/* ---------- what Klaro knows ---------- */
+let kbSeq = 0;
+const kid = (p) => p + Date.now().toString(36) + (kbSeq++).toString(36);
+export function knowledgeFrom(draft) {
+  const d = draft || {};
+  return {
+    description: d.bizDesc || '',
+    services: (d.services || []).slice(0, 20),
+    facts: (d.facts || []).filter((f) => f && f.k && (f.v || '').trim()).map((f) => ({ k: f.k, v: f.v })),
+    qa: [],
+    updates: [],
+    source: d.url ? { url: d.url, readAt: null } : null
+  };
+}
+/** Knowledge for any workspace, including ones made before knowledge existed. */
+export const kbOf = (s) => s.knowledge || { description: '', services: s.services || [], facts: [], qa: [], updates: [], source: s.url ? { url: s.url } : null };
+
+const WORD = /[a-z0-9£$]+/g;
+const STOP = new Set('a an the is are do does you your we our i me my to of for on in at it and or can could would will be have has with what when where how which there any this that from about please'.split(' '));
+const words = (t) => (String(t || '').toLowerCase().match(WORD) || []).filter((w) => !STOP.has(w) && w.length > 1);
+/** Preview of how Klaro finds an answer: best match across taught answers, temporary updates and facts. */
+export function findAnswer(kb, question, today) {
+  const q = words(question);
+  if (!q.length) return null;
+  const score = (text) => { const w = new Set(words(text)); return q.reduce((n, x) => n + (w.has(x) || [...w].some((y) => y.length > 3 && (y.startsWith(x) || x.startsWith(y))) ? 1 : 0), 0); };
+  const live = (kb.updates || []).filter((u) => !u.until || !today || u.until >= today);
+  const cands = []
+    .concat((kb.qa || []).map((x) => ({ kind: 'Taught answer', src: x.q, answer: x.a, s: score(x.q + ' ' + x.a) * 1.4 })))
+    .concat(live.map((u) => ({ kind: 'Current update', src: u.text, answer: u.text, s: score(u.text) * 1.6 })))
+    .concat((kb.facts || []).map((f) => ({ kind: 'Fact', src: f.k, answer: f.k + ': ' + f.v + '.', s: score(f.k + ' ' + f.v) })))
+    .concat((kb.services || []).map((x) => ({ kind: 'Service', src: x, answer: 'Yes, we offer ' + x.toLowerCase() + '. I can take your details so the team can follow up.', s: score(x) * 0.9 })));
+  const best = cands.sort((a, b) => b.s - a.s)[0];
+  return best && best.s >= 1 ? best : null;
+}
+
 export function initialWorkspace(draft, people, ownerId, nowInput, sample, examples) {
   const now = nowInput ? new Date(nowInput) : SAMPLE_NOW;
   const isSample = sample !== false && !people;
@@ -113,6 +148,7 @@ export function initialWorkspace(draft, people, ownerId, nowInput, sample, examp
     examples: examples !== false,
     biz, klaro, kind, team: S.team, url: (draft && draft.url) || '',
     services: (draft && draft.services) || [],
+    knowledge: knowledgeFrom(draft),
     people: P, owner,
     today: dayLabel(now), todayLong: longLabel(now),
     clock: now.getHours() * 60 + now.getMinutes(),
@@ -190,7 +226,9 @@ const addTl = (e, t, by, text) => ({ ...e, timeline: e.timeline.concat([{ t, by,
 const personName = (s, id) => (s.people && s.people[id] ? s.people[id].name : 'Someone');
 
 /** Which actions change the record (owner/admin only). */
-export const WRITE_ACTIONS = ['assign', 'attempt', 'confirm', 'send-result', 'told', 'resolve', 'reopen', 'request-number', 'cancel-number'];
+export const WRITE_ACTIONS = ['assign', 'attempt', 'confirm', 'send-result', 'told', 'resolve', 'reopen', 'request-number', 'cancel-number', 'kb-set', 'kb-add-qa', 'kb-del-qa', 'kb-add-update', 'kb-del-update', 'kb-source', 'rename-biz', 'set-member-role', 'remove-member', 'allow-member'];
+/** Changes anyone signed in can make, to their own profile only. */
+export const SELF_ACTIONS = ['update-profile'];
 
 export const telHref = (n) => 'tel:' + String(n || '').replace(/[^\d+]/g, '');
 export const numberOf = (s) => (s && s.number && typeof s.number === 'object' ? s.number : { status: 'none' });
@@ -207,6 +245,58 @@ export function reducer(s, a) {
       return { ...s, number: { status: 'requested', kind, area: String(a.area || '').slice(0, 60), existing: String(a.existing || '').slice(0, 30), requestedAt: (s.today || '') + ' ' + now, requestedBy: who } };
     }
     case 'cancel-number': return { ...s, number: { status: 'none' } };
+    case 'kb-set': {
+      const kb = { ...kbOf(s) };
+      if (a.field === 'description') kb.description = String(a.value || '').slice(0, 600);
+      if (a.field === 'services') kb.services = (Array.isArray(a.value) ? a.value : []).map((x) => String(x).slice(0, 60)).filter(Boolean).slice(0, 20);
+      if (a.field === 'facts') kb.facts = (Array.isArray(a.value) ? a.value : []).filter((f) => f && f.k && f.v).map((f) => ({ k: String(f.k).slice(0, 40), v: String(f.v).slice(0, 200) })).slice(0, 30);
+      return { ...s, knowledge: kb, services: kb.services };
+    }
+    case 'kb-source': {
+      const kb = { ...kbOf(s), source: { url: String(a.url || '').slice(0, 200), readAt: (s.today || '') + ' ' + now } };
+      return { ...s, knowledge: kb };
+    }
+    case 'kb-add-qa': {
+      const kb = kbOf(s);
+      const item = { id: kid('q'), q: String(a.q || '').slice(0, 200), a: String(a.a || '').slice(0, 600), by: who, at: (s.today || '') + ' ' + now, from: a.from || null };
+      if (!item.q || !item.a) return s;
+      let next = { ...s, knowledge: { ...kb, qa: [item].concat(kb.qa || []).slice(0, 200) } };
+      if (a.need) {
+        const n = next.needs.find((x) => x.id === a.need);
+        if (n && n.state !== 'resolved') {
+          next.needs = next.needs.map((x) => (x.id === a.need ? { ...x, state: 'resolved', next: null, resolution: 'Taught ' + (s.klaro || 'Klaro') + ' the answer · ' + who + ' · ' + now } : x));
+          if (n.enquiry) next.enquiries = next.enquiries.map((e) => (e.id === n.enquiry ? addTl(e, now, who, 'Taught ' + (s.klaro || 'Klaro') + ': “' + item.q + '” → “' + item.a + '”. It will answer this next time.') : e));
+        }
+      }
+      return next;
+    }
+    case 'kb-del-qa': { const kb = kbOf(s); return { ...s, knowledge: { ...kb, qa: (kb.qa || []).filter((x) => x.id !== a.id) } }; }
+    case 'kb-add-update': {
+      const kb = kbOf(s);
+      const u = { id: kid('u'), text: String(a.text || '').slice(0, 300), until: String(a.until || '').slice(0, 10), by: who, at: (s.today || '') + ' ' + now };
+      if (!u.text) return s;
+      return { ...s, knowledge: { ...kb, updates: [u].concat(kb.updates || []).slice(0, 50) } };
+    }
+    case 'kb-del-update': { const kb = kbOf(s); return { ...s, knowledge: { ...kb, updates: (kb.updates || []).filter((x) => x.id !== a.id) } }; }
+    case 'rename-biz': { const name = String(a.name || '').trim().slice(0, 80); return name ? { ...s, biz: name } : s; }
+    case 'update-profile': {
+      const p = s.people[a.actor]; const name = String(a.name || '').trim().slice(0, 60);
+      if (!p || !name) return s;
+      return { ...s, people: { ...s.people, [a.actor]: { ...p, name, team: a.team != null ? String(a.team).slice(0, 40) : p.team } } };
+    }
+    case 'set-member-role': {
+      const p = s.people[a.id]; if (!p) return s;
+      const role = a.role === 'owner' ? 'owner' : 'member';
+      const owners = Object.values(s.people).filter((x) => x.role === 'owner' && x.id !== a.id).length;
+      if (role === 'member' && owners === 0) return s;
+      return { ...s, people: { ...s.people, [a.id]: { ...p, role, team: role === 'owner' ? 'Admin' : (s.team || 'Team') } } };
+    }
+    case 'allow-member': return { ...s, removed: (s.removed || []).filter((x) => x !== a.id) };
+    case 'remove-member': {
+      if (!s.people[a.id] || a.id === a.actor) return s;
+      const people = { ...s.people }; delete people[a.id];
+      return { ...s, people, removed: (s.removed || []).concat([a.id]) };
+    }
     case 'replace': return a.state;
     case 'assign': {
       const p = a.owner && s.people[a.owner];

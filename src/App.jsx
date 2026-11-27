@@ -33,13 +33,13 @@ function readRoute() {
   if (path === '/ops') return { view: 'ops', key };
   if (path.startsWith('/app')) {
     const sub = path.split('/')[2] || '';
-    const ws = { '': 'home', enquiries: 'enquiries', 'needs-you': 'needs', number: 'number', studio: 'studio' }[sub] || 'home';
-    return { view: 'app', ws, enquiry: p.get('e') || '', filter: p.get('f') || 'all', key: 'app' };
+    const ws = { '': 'home', enquiries: 'enquiries', 'needs-you': 'needs', number: 'number', studio: 'studio', settings: 'settings' }[sub] || 'home';
+    return { view: 'app', ws, enquiry: p.get('e') || '', filter: p.get('f') || 'all', teach: p.get('teach') || '', key: 'app' };
   }
   return { view: 'landing', key: 'landing' };
 }
 
-const SCREEN = { home: '05', enquiries: '07', needs: '08', number: '06', studio: '09' };
+const SCREEN = { home: '05', enquiries: '07', needs: '08', number: '06', studio: '09', settings: '05' };
 
 export default function App() {
   const [route, setRoute] = useState(readRoute);
@@ -143,10 +143,10 @@ export default function App() {
     else if (session) {
       const effective = session.me.role === 'owner' ? role : 'member';
       page = <Workspace ws={session.workspace} apply={applyLive} live review={review} onExamples={exampleCalls} me={session.me.email} realRole={session.me.role} domain={session.domain} personal={session.personal}
-        role={effective} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} go={go} sim={review ? sim : { ...sim, email: 'ok' }} onHome={home} onSetup={() => start('', true)} onSignOut={signOut} {...common} />;
+        role={effective} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} teach={route.teach} go={go} sim={review ? sim : { ...sim, email: 'ok' }} onHome={home} onSetup={() => start('', true)} onSignOut={signOut} {...common} />;
     } else {
       page = <Workspace ws={sample} apply={applySample} live={false} review={review} me={role === 'member' ? 'tolu' : 'dami'} realRole={role}
-        role={role} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} go={go} sim={sim} onHome={home} onSetup={() => go('/', { fresh: true })} onSignOut={home} {...common} />;
+        role={role} setRole={setRole} view={route.ws} enquiryId={route.enquiry} filter={route.filter} teach={route.teach} go={go} sim={sim} onHome={home} onSetup={() => go('/', { fresh: true })} onSignOut={home} {...common} />;
     }
   } else {
     page = <Landing key={route.key} onStart={start} signedIn={!!session} onOpenApp={() => go('/app')} onSignIn={() => go('/signin')} {...common} />;

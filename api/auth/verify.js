@@ -24,6 +24,7 @@ export default async function handler(req, res) {
       return send(res, 200, { ok: true, opsOnly: true, me: { email, name: email, role: 'ops' } }, { 'Set-Cookie': sessionCookie(t, SESSION_DAYS * 86400) });
     }
     const j = await joinOrCreate(email, r.rec.name, r.rec.draft, r.rec.now || undefined);
+    if (j.removed) return send(res, 403, { error: 'removed', message: 'You’ve been removed from the ' + j.ws.state.biz + ' workspace. Ask an owner to add you back.' });
     const token = await createSession(email);
     const view = publicView({ email, me: j.ws.state.people[email], ws: j.ws });
     return send(res, 200, { ok: true, ...view, created: j.created, joined: !!j.joined }, { 'Set-Cookie': sessionCookie(token, SESSION_DAYS * 86400) });

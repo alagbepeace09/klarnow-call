@@ -4,7 +4,9 @@ import Ally from './components/Ally.jsx';
 import Klaro from './components/Klaro.jsx';
 import { BrandMark, ThemeToggle } from './components/Brand.jsx';
 import { Tag } from './components/Review.jsx';
-import { counts, numberOf, telHref } from './workspace/model.js';
+import { counts, numberOf, telHref, kbOf, findAnswer } from './workspace/model.js';
+
+const todayIso = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 // Set from the current workspace on every render of <Workspace>.
 let PEOPLE = {};
@@ -549,7 +551,7 @@ function Drawer({ ws, e, role, setRole, canPreview, meId, apply, saving, save, s
 }
 
 /* ---------- 08 Needs You ---------- */
-function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
+function NeedsYou({ ws, role, save, saving, openEnq, ann, go, live }) {
   const lead = ws.enquiries.find((x) => x.id === 'e1');
   const [tab, setTab] = useState('open');
   const [resolving, setResolving] = useState(null);
@@ -601,6 +603,7 @@ function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
                       <div className="a-select pill"><select id={'own-' + n.id} value={n.owner || ''} disabled={saving} onChange={(ev) => save({ type: 'assign', id: e.id, owner: ev.target.value || null, mins: 2 })}>
                         <option value="">Unassigned</option>{peopleList().map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select><Icon name="chev" size="sm" /></div>
+                      {live && <button className="ab ab-light" onClick={() => go('/app/studio?teach=' + n.id)}><Icon name="sparkle" size="sm" />Teach {ws.klaro}</button>}
                       {resolving !== n.id && <button className="ab ab-dark" onClick={() => { setResolving(n.id); setReason(''); setErr(''); }}>Resolve</button>}
                     </>
                   )}
@@ -748,6 +751,319 @@ function NumberPage({ ws, role, save, saving }) {
   );
 }
 
+/* ---------- 09 Klaro Studio: what Klaro knows, and teaching it ---------- */
+function StudioAsk({ ws, owner, onTeach }) {
+  const [q, setQ] = useState('');
+  const [res, setRes] = useState(null);
+  const kb = kbOf(ws);
+  const ask = (ev) => { ev.preventDefault(); if (!q.trim()) return; setRes({ q: q.trim(), hit: findAnswer(kb, q, todayIso()) }); };
+  return (
+    <section className="a-card">
+      <div className="a-card-top"><h2>Ask {ws.klaro} a question</h2><span className="ap t-violet"><i />Test</span></div>
+      <p className="a-fine">Type something a caller might ask. {ws.klaro} answers only from what it knows below.</p>
+      <form className="a-ask" onSubmit={ask}>
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Are you open on Sunday?" aria-label="Question for Klaro" />
+        <button className="ab ab-dark" type="submit">Ask</button>
+      </form>
+      {res && (
+        <div className="a-answer" aria-live="polite">
+          <div className="a-bub c"><small>Caller</small>{res.q}</div>
+          {res.hit ? (
+            <div className="a-bub k"><small>{ws.klaro} · from {res.hit.kind.toLowerCase()}</small>{res.hit.answer}</div>
+          ) : (
+            <div className="a-bub k miss"><small>{ws.klaro}</small>I’m not sure about that yet. I’ll take your name and number and pass it to the team.
+              <span className="a-miss-note">This would go to Needs You.{owner ? ' Teach the answer once and Klaro uses it on every call.' : ''}</span>
+              {owner && <button className="ab ab-light" onClick={() => onTeach(res.q)}>Teach {ws.klaro} this answer</button>}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TeachForm({ ws, initialQ, need, save, saving, onDone }) {
+  const [q, setQ] = useState(initialQ || '');
+  const [a, setA] = useState('');
+  const [err, setErr] = useState('');
+  const submit = (ev) => {
+    ev.preventDefault();
+    if (!q.trim() || !a.trim()) { setErr('Add both the question and the answer.'); return; }
+    setErr('');
+    save({ type: 'kb-add-qa', q: q.trim(), a: a.trim(), need: need || undefined, from: need ? 'needs-you' : 'studio', mins: 1 }, () => { setQ(''); setA(''); onDone && onDone(); });
+  };
+  return (
+    <form className="a-form a-teach" onSubmit={submit} noValidate>
+      <div className="a-field"><label htmlFor={'tq-' + (need || 'new')}>When a caller asks</label><input id={'tq-' + (need || 'new')} value={q} onChange={(e) => setQ(e.target.value)} placeholder="e.g. Do you take walk-ins?" /></div>
+      <div className="a-field"><label htmlFor={'ta-' + (need || 'new')}>{ws.klaro} should say</label><textarea id={'ta-' + (need || 'new')} rows={3} value={a} onChange={(e) => setA(e.target.value)} placeholder="Write it the way you’d say it on the phone." /></div>
+      {err && <p className="a-err" role="alert"><Icon name="alert" size="sm" />{err}</p>}
+      <div className="a-actions"><button className="ab ab-dark" type="submit" disabled={saving}>{saving ? 'Saving…' : need ? 'Teach and resolve' : 'Teach ' + ws.klaro}</button>{onDone && <button type="button" className="ab ab-light" onClick={onDone}>Cancel</button>}</div>
+    </form>
+  );
+}
+
+function ListEditor({ items, onSave, saving, placeholder, owner, label }) {
+  const [list, setList] = useState(items);
+  const [v, setV] = useState('');
+  useEffect(() => { setList(items); }, [items.join('|')]);
+  const dirty = list.join('|') !== items.join('|');
+  return (
+    <div>
+      <div className="a-chips edit">{list.map((x, i) => <span key={x + i}>{x}{owner && <button aria-label={'Remove ' + x} onClick={() => setList(list.filter((_, j) => j !== i))}><Icon name="close" size="sm" /></button>}</span>)}{!list.length && <span className="muted">None yet</span>}</div>
+      {owner && (
+        <div className="a-inline">
+          <input value={v} onChange={(e) => setV(e.target.value)} placeholder={placeholder} aria-label={label} onKeyDown={(e) => { if (e.key === 'Enter' && v.trim()) { e.preventDefault(); setList(list.concat([v.trim()])); setV(''); } }} />
+          <button className="ab ab-light" onClick={() => { if (v.trim()) { setList(list.concat([v.trim()])); setV(''); } }}>Add</button>
+          <button className="ab ab-dark" disabled={!dirty || saving} onClick={() => onSave(list)}>Save</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FactsEditor({ facts, onSave, saving, owner }) {
+  const base = facts.length ? facts : [{ k: 'Opening hours', v: '' }, { k: 'Address', v: '' }, { k: 'Phone', v: '' }];
+  const [rows, setRows] = useState(base);
+  useEffect(() => { setRows(facts.length ? facts : base); }, [JSON.stringify(facts)]);
+  const set = (i, key, val) => setRows(rows.map((r, j) => (j === i ? { ...r, [key]: val } : r)));
+  return (
+    <div className="a-facts">
+      {rows.map((r, i) => (
+        <div key={i} className="a-fact">
+          <input value={r.k} disabled={!owner} onChange={(e) => set(i, 'k', e.target.value)} aria-label="Fact name" />
+          <input value={r.v} disabled={!owner} onChange={(e) => set(i, 'v', e.target.value)} placeholder="Not set" aria-label={r.k + ' value'} />
+          {owner && <button className="a-circle sm" aria-label={'Remove ' + r.k} onClick={() => setRows(rows.filter((_, j) => j !== i))}><Icon name="close" size="sm" /></button>}
+        </div>
+      ))}
+      {owner && <div className="a-actions"><button className="ab ab-light" onClick={() => setRows(rows.concat([{ k: '', v: '' }]))}>Add a fact</button><button className="ab ab-dark" disabled={saving} onClick={() => onSave(rows.filter((r) => r.k.trim() && r.v.trim()))}>Save facts</button></div>}
+    </div>
+  );
+}
+
+function KlaroStudio({ ws, role, save, saving, teach, go }) {
+  const owner = role === 'owner';
+  const kb = kbOf(ws);
+  const [teachQ, setTeachQ] = useState(null);
+  const [teachNeed, setTeachNeed] = useState(teach || null);
+  const [desc, setDesc] = useState(kb.description || '');
+  const [upd, setUpd] = useState({ text: '', until: '' });
+  const [scan, setScan] = useState(null);
+  useEffect(() => { setDesc(kb.description || ''); }, [kb.description]);
+  const open = ws.needs.filter((n) => n.state !== 'resolved');
+  const today = todayIso();
+  const reread = async () => {
+    const url = (kb.source && kb.source.url) || ws.url;
+    if (!url) return;
+    setScan({ loading: true });
+    try {
+      const r = await fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+      const j = await r.json();
+      setScan(r.ok ? { site: j.site } : { error: j.message || 'Couldn’t read the site.' });
+    } catch (e) { setScan({ error: 'Couldn’t reach the website reader.' }); }
+  };
+  const applyScan = () => {
+    const st = scan.site;
+    const facts = [['Phone', st.phone], ['Address', st.address], ['Opening hours', st.hours], ['Email', st.email]].filter((f) => f[1]).map((f) => ({ k: f[0], v: f[1] }));
+    const merged = kb.facts.filter((f) => !facts.some((g) => g.k === f.k)).concat(facts);
+    save({ type: 'kb-set', field: 'facts', value: merged }, null, true)
+      .then(() => (st.description ? save({ type: 'kb-set', field: 'description', value: st.description }, null, true) : null))
+      .then(() => (st.services && st.services.length ? save({ type: 'kb-set', field: 'services', value: Array.from(new Set(kb.services.concat(st.services))) }, null, true) : null))
+      .then(() => save({ type: 'kb-source', url: st.host }, () => setScan(null)));
+  };
+  return (
+    <div className="a-page">
+      <header className="a-head">
+        <div><p className="a-eyebrow">Klaro Studio</p><h1>What {ws.klaro} knows about {ws.biz}</h1>
+          <p className="a-sub">{ws.klaro} answers callers only from what’s here. Teach it once and it remembers on every call.</p></div>
+      </header>
+      {!owner && <ReadOnly what="change what Klaro knows" />}
+
+      <div className="a-two">
+        <StudioAsk ws={ws} owner={owner} onTeach={(q) => { setTeachNeed(null); setTeachQ(q); setTimeout(() => { const el = document.getElementById('teach-new'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); }} />
+        <section className="a-card a-dark">
+          <div className="a-card-top"><h2>How {ws.klaro} learns</h2></div>
+          <ol className="a-learn">
+            <li><b>Your website</b><span>Read when you set up. Re-read it any time your site changes.</span></li>
+            <li><b>Your facts and services</b><span>Hours, address, prices and what you offer. Edit them below.</span></li>
+            <li><b>Answers you teach</b><span>When a caller asks something {ws.klaro} can’t answer, it goes to Needs You. Teach the answer once and it’s used from then on.</span></li>
+            <li><b>Current updates</b><span>Short-term changes like holiday hours or a closed day. They stop on the date you set.</span></li>
+          </ol>
+          <div className="a-dark-foot">
+            <span className="a-mute">{kb.source && kb.source.url ? 'Website: ' + kb.source.url + (kb.source.readAt ? ' · read ' + kb.source.readAt : '') : 'No website linked'}</span>
+            {owner && (kb.source && kb.source.url || ws.url) && <button className="ab ab-white" onClick={reread} disabled={scan && scan.loading}>{scan && scan.loading ? 'Reading…' : 'Re-read my website'}</button>}
+          </div>
+          {scan && scan.error && <p className="a-err on-dark" role="alert"><Icon name="alert" size="sm" />{scan.error}</p>}
+          {scan && scan.site && (
+            <div className="a-scan-res">
+              <b>Found on {scan.site.host}</b>
+              <span>{[scan.site.phone && 'Phone', scan.site.address && 'Address', scan.site.hours && 'Hours', scan.site.email && 'Email', scan.site.description && 'Description', scan.site.services.length && scan.site.services.length + ' services'].filter(Boolean).join(' · ') || 'Nothing new'}</span>
+              <div className="a-actions"><button className="ab ab-white" onClick={applyScan} disabled={saving}>Update what {ws.klaro} knows</button><button className="ab ab-glass" onClick={() => setScan(null)}>Not now</button></div>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className="a-card">
+        <div className="a-card-top"><h2>Questions {ws.klaro} couldn’t answer</h2><span className="a-mute sm">{open.length} waiting</span></div>
+        {!open.length && <p className="a-empty">Nothing waiting. When a caller asks something {ws.klaro} can’t answer, it shows up here so you can teach it.</p>}
+        <div className="a-sunk">
+          {open.map((n) => {
+            const e = ws.enquiries.find((x) => x.id === n.enquiry);
+            return (
+              <div key={n.id} className="a-teach-row">
+                <div className="a-row static">
+                  <Ally shape={e.ally.shape} tile={e.ally.tile} size={36} radius={18} />
+                  <span className="m"><b>{n.reason}</b><span>{e.customer} · {e.topic}</span></span>
+                  {owner && teachNeed !== n.id && <button className="ab ab-dark" onClick={() => setTeachNeed(n.id)}>Teach the answer</button>}
+                </div>
+                {owner && teachNeed === n.id && <TeachForm ws={ws} initialQ={e.topic} need={n.id} save={save} saving={saving} onDone={() => setTeachNeed(null)} />}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="a-two even">
+        <section className="a-card" id="teach-new">
+          <div className="a-card-top"><h2>Answers you’ve taught</h2><span className="a-mute sm">{(kb.qa || []).length}</span></div>
+          {owner && <TeachForm key={teachQ || 'blank'} ws={ws} initialQ={teachQ || ''} save={save} saving={saving} />}
+          <div className="a-qa">
+            {(kb.qa || []).map((x) => (
+              <div key={x.id} className="a-qa-i">
+                <div><b>“{x.q}”</b><p>{x.a}</p><span className="a-mute sm">{x.by} · {x.at}{x.from === 'needs-you' ? ' · from a call' : ''}</span></div>
+                {owner && <button className="a-circle sm" aria-label="Delete answer" onClick={() => save({ type: 'kb-del-qa', id: x.id })}><Icon name="close" size="sm" /></button>}
+              </div>
+            ))}
+            {!(kb.qa || []).length && <p className="a-empty">No answers taught yet.</p>}
+          </div>
+        </section>
+        <section className="a-card">
+          <div className="a-card-top"><h2>Current updates</h2><span className="a-mute sm">Things that change for a while</span></div>
+          {owner && (
+            <form className="a-form" onSubmit={(e) => { e.preventDefault(); if (!upd.text.trim()) return; save({ type: 'kb-add-update', text: upd.text.trim(), until: upd.until }, () => setUpd({ text: '', until: '' })); }}>
+              <div className="a-field"><label htmlFor="up-t">What’s different</label><textarea id="up-t" rows={2} value={upd.text} onChange={(e) => setUpd({ ...upd, text: e.target.value })} placeholder="e.g. Closed 24–26 December. Back on the 27th." /></div>
+              <div className="a-inline"><label className="a-mute sm" htmlFor="up-d">Until</label><input id="up-d" type="date" value={upd.until} onChange={(e) => setUpd({ ...upd, until: e.target.value })} /><button className="ab ab-dark" type="submit" disabled={saving}>Add update</button></div>
+            </form>
+          )}
+          <div className="a-qa">
+            {(kb.updates || []).map((u) => {
+              const over = u.until && u.until < today;
+              return (
+                <div key={u.id} className={'a-qa-i' + (over ? ' over' : '')}>
+                  <div><p>{u.text}</p><span className="a-mute sm">{u.until ? (over ? 'Ended ' : 'Until ') + u.until : 'No end date'} · {u.by}</span></div>
+                  {owner && <button className="a-circle sm" aria-label="Delete update" onClick={() => save({ type: 'kb-del-update', id: u.id })}><Icon name="close" size="sm" /></button>}
+                </div>
+              );
+            })}
+            {!(kb.updates || []).length && <p className="a-empty">No current updates.</p>}
+          </div>
+        </section>
+      </div>
+
+      <div className="a-two even">
+        <section className="a-card">
+          <div className="a-card-top"><h2>About the business</h2></div>
+          <textarea className="a-textarea" rows={4} value={desc} disabled={!owner} onChange={(e) => setDesc(e.target.value)} placeholder="One or two sentences, the way you’d say it on the phone." aria-label="Business description" />
+          {owner && <div className="a-actions" style={{ marginTop: 12 }}><button className="ab ab-dark" disabled={saving || desc === (kb.description || '')} onClick={() => save({ type: 'kb-set', field: 'description', value: desc })}>Save</button></div>}
+          <div className="a-sep" />
+          <h3 className="a-h3">Services callers ask about</h3>
+          <ListEditor items={kb.services || []} owner={owner} saving={saving} placeholder="Add a service" label="New service" onSave={(v) => save({ type: 'kb-set', field: 'services', value: v })} />
+        </section>
+        <section className="a-card">
+          <div className="a-card-top"><h2>Facts</h2><span className="a-mute sm">{ws.klaro} shares only these</span></div>
+          <FactsEditor facts={kb.facts || []} owner={owner} saving={saving} onSave={(v) => save({ type: 'kb-set', field: 'facts', value: v })} />
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Settings & profile ---------- */
+function Settings({ ws, me, realRole, role, save, saving, domain, personal, theme, onToggleTheme, onSignOut, live }) {
+  const p = PEOPLE[me] || { name: '', email: me };
+  const owner = role === 'owner';
+  const [name, setName] = useState(p.name || '');
+  const [biz, setBiz] = useState(ws.biz);
+  useEffect(() => { setName(p.name || ''); }, [p.name]);
+  useEffect(() => { setBiz(ws.biz); }, [ws.biz]);
+  const team = Object.values(PEOPLE);
+  const owners = team.filter((x) => x.role === 'owner').length;
+  const link = (typeof window !== 'undefined' ? window.location.origin : '') + '/signin';
+  return (
+    <div className="a-page">
+      <header className="a-head"><div><p className="a-eyebrow">Settings</p><h1>Your profile and workspace</h1></div></header>
+      <div className="a-two even">
+        <section className="a-card">
+          <div className="a-card-top"><h2>Profile</h2></div>
+          <div className="a-profile">
+            <span className="a-av lg">{initials(p.name || 'You').slice(0, 2)}</span>
+            <div><b>{p.name}</b><span>{p.email || me}</span><span className={'ap ' + (realRole === 'owner' ? 't-violet' : 't-grey')}><i />{realRole === 'owner' ? 'Owner/admin' : 'Member · view only'}</span></div>
+          </div>
+          <form className="a-form" style={{ marginTop: 18 }} onSubmit={(e) => { e.preventDefault(); if (name.trim()) save({ type: 'update-profile', name: name.trim() }, null, false, true); }}>
+            <div className="a-field"><label htmlFor="pf-name">Your name</label><input id="pf-name" value={name} onChange={(e) => setName(e.target.value)} disabled={!live} /></div>
+            <div className="a-field"><label htmlFor="pf-mail">Email</label><input id="pf-mail" value={p.email || me} disabled /></div>
+            {live && <div className="a-actions"><button className="ab ab-dark" type="submit" disabled={saving || !name.trim() || name.trim() === p.name}>Save profile</button></div>}
+            <p className="a-fine">You sign in with this email and a one-time code. There’s no password to manage.</p>
+          </form>
+        </section>
+        <section className="a-card">
+          <div className="a-card-top"><h2>Workspace</h2></div>
+          <form className="a-form" onSubmit={(e) => { e.preventDefault(); if (biz.trim()) save({ type: 'rename-biz', name: biz.trim() }); }}>
+            <div className="a-field"><label htmlFor="ws-name">Business name</label><input id="ws-name" value={biz} onChange={(e) => setBiz(e.target.value)} disabled={!owner} /></div>
+            {owner && <div className="a-actions"><button className="ab ab-dark" type="submit" disabled={saving || !biz.trim() || biz.trim() === ws.biz}>Save name</button></div>}
+          </form>
+          <dl className="a-dl">
+            <div><dt>Website</dt><dd>{(kbOf(ws).source && kbOf(ws).source.url) || ws.url || 'None'}</dd></div>
+            <div><dt>Receptionist</dt><dd>{ws.klaro}</dd></div>
+            <div><dt>Phone number</dt><dd>{numberOf(ws).value || (numberOf(ws).status === 'requested' ? 'Requested' : 'Not set up')}</dd></div>
+            <div><dt>Who can join</dt><dd>{personal ? 'Only you (personal email)' : 'Anyone who signs in with an @' + domain + ' email'}</dd></div>
+          </dl>
+          <div className="a-sep" />
+          <h3 className="a-h3">Appearance</h3>
+          <div className="a-seg" role="group" aria-label="Theme">
+            <button className={theme === 'light' ? 'on' : ''} aria-pressed={theme === 'light'} onClick={() => theme !== 'light' && onToggleTheme()}>Light</button>
+            <button className={theme === 'dark' ? 'on' : ''} aria-pressed={theme === 'dark'} onClick={() => theme !== 'dark' && onToggleTheme()}>Dark</button>
+          </div>
+        </section>
+      </div>
+
+      <section className="a-card">
+        <div className="a-card-top"><h2>Team</h2><span className="a-mute sm">{team.length} {team.length === 1 ? 'person' : 'people'}</span></div>
+        <div className="a-sunk">
+          {team.map((x) => (
+            <div key={x.id} className="a-row static a-member">
+              <span className="a-av sm">{initials(x.name).slice(0, 2)}</span>
+              <span className="m"><b>{x.name}{x.id === me ? ' (you)' : ''}</b><span>{x.email}</span></span>
+              {owner && live && !(x.role === 'owner' && owners === 1) ? (
+                <div className="a-select pill"><select aria-label={'Role for ' + x.name} value={x.role} disabled={saving} onChange={(e) => save({ type: 'set-member-role', id: x.id, role: e.target.value })}>
+                  <option value="owner">Owner/admin</option><option value="member">Member</option>
+                </select><Icon name="chev" size="sm" /></div>
+              ) : <span className={'ap ' + (x.role === 'owner' ? 't-violet' : 't-grey')}><i />{x.role === 'owner' ? 'Owner/admin' : 'Member'}</span>}
+              {owner && live && x.id !== me ? <button className="ab ab-light" disabled={saving} onClick={() => { if (window.confirm('Remove ' + x.name + ' from ' + ws.biz + '? They won’t be able to sign in to this workspace.')) save({ type: 'remove-member', id: x.id }); }}>Remove</button> : <span />}
+            </div>
+          ))}
+        </div>
+        {(ws.removed || []).length > 0 && owner && (
+          <div className="a-removed"><span className="a-mute sm">Removed:</span>{ws.removed.map((r) => <span key={r} className="a-chip-x">{r}<button className="a-link" onClick={() => save({ type: 'allow-member', id: r })}>Allow back</button></span>)}</div>
+        )}
+        {!personal && (
+          <div className="a-invite">
+            <p className="a-fine">To add colleagues, send them the sign-in link. Anyone who signs in with an <b>@{domain}</b> email joins as a member. Owners can make them an admin here.</p>
+            <CopyBtn text={link} label="Copy sign-in link" />
+          </div>
+        )}
+      </section>
+
+      {live && (
+        <section className="a-card a-account">
+          <div><h2>Sign out</h2><p className="a-fine">Signs you out on this browser. Your workspace stays as it is.</p></div>
+          <button className="ab ab-light" onClick={onSignOut}><Icon name="out" size="sm" />Sign out</button>
+        </section>
+      )}
+    </div>
+  );
+}
+
 function NextReview({ which, go, role }) {
   const info = which === 'number'
     ? ['06 · Number & Go Live', 'Choose a new number or forward your own', 'The next review covers choosing or forwarding a number, payment and verification, and the requested, configuring, failed and live states. Paying alone won’t mark Klaro as live.']
@@ -772,7 +1088,7 @@ function NextReview({ which, go, role }) {
 }
 
 /* ---------- shell ---------- */
-export default function Workspace({ ws, apply, live, review, onExamples, me, realRole, domain, personal, role, setRole, view, enquiryId, filter, go, sim, onHome, onSetup, onSignOut, theme, onToggleTheme, motion, ann }) {
+export default function Workspace({ ws, apply, live, review, onExamples, me, realRole, domain, personal, role, setRole, view, enquiryId, filter, teach, go, sim, onHome, onSetup, onSignOut, theme, onToggleTheme, motion, ann }) {
   PEOPLE = ws.people || {};
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
@@ -794,13 +1110,13 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
   }, []);
 
   const flash = (t, kind) => { setToast({ t, kind }); clearTimeout(flash.t); flash.t = setTimeout(() => setToast(null), 4200); };
-  const save = (action, after, quiet) => {
-    if (role !== 'owner') { flash('Only owners and admins can change this. Nothing was changed.', 'bad'); return Promise.resolve(); }
+  const save = (action, after, quiet, self) => {
+    if (role !== 'owner' && !self) { flash('Only owners and admins can change this. Nothing was changed.', 'bad'); return Promise.resolve(); }
     setSaving(true);
     return Promise.resolve(apply({ ...action, actor: me }))
       .then(() => {
         if (after) after();
-        if (!quiet) flash(action.type === 'assign' ? 'Assigned. Shown in Needs You and on the enquiry.' : action.type === 'confirm' ? 'Outcome saved. Needs You and the Command Centre are updated.' : action.type === 'attempt' ? 'Attempt saved. The item stays open.' : action.type === 'resolve' ? 'Resolved. The enquiry timeline has a new entry.' : action.type === 'reopen' ? 'Reopened. It’s back in Needs You.' : 'Saved.', 'ok');
+        if (!quiet) flash(action.type.startsWith('kb-') ? (action.type === 'kb-add-qa' ? 'Taught. ' + ws.klaro + ' will use this answer from now on.' : 'Saved. ' + ws.klaro + ' uses this on the next call.') : action.type === 'update-profile' ? 'Profile saved.' : action.type === 'assign' ? 'Assigned. Shown in Needs You and on the enquiry.' : action.type === 'confirm' ? 'Outcome saved. Needs You and the Command Centre are updated.' : action.type === 'attempt' ? 'Attempt saved. The item stays open.' : action.type === 'resolve' ? 'Resolved. The enquiry timeline has a new entry.' : action.type === 'reopen' ? 'Reopened. It’s back in Needs You.' : 'Saved.', 'ok');
       })
       .catch((err) => flash((err && err.message) || 'Couldn’t save. Nothing changed. Try again.', 'bad'))
       .finally(() => setSaving(false));
@@ -813,9 +1129,10 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
     ['enquiries', '/app/enquiries', 'Calls & Enquiries', 'phone', c.openEnq],
     ['needs', '/app/needs-you', 'Needs You', 'bell', c.needsOpen],
     ['number', '/app/number', 'Number & Go Live', 'sim', null, !live],
-    ['studio', '/app/studio', 'Klaro Studio', 'sparkle', null, true]
+    ['studio', '/app/studio', 'Klaro Studio', 'sparkle', null, !live],
+    ['settings', '/app/settings', 'Settings', 'cog']
   ];
-  const title = { home: 'Overview', enquiries: 'Calls & Enquiries', needs: 'Needs You', number: 'Number & Go Live', studio: 'Klaro Studio' }[view];
+  const title = { home: 'Overview', enquiries: 'Calls & Enquiries', needs: 'Needs You', number: 'Number & Go Live', studio: 'Klaro Studio', settings: 'Settings' }[view];
   const words = String(ws.biz || '').split(' ');
   const half = Math.ceil(words.length / 2);
 
@@ -857,10 +1174,11 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
               {live && !personal && <p className="a-fine">Colleagues join by signing in with an @{domain} email.</p>}
               {live && personal && <p className="a-fine">Personal workspace. Sign in with a company email to share it with a team.</p>}
             </div>
-            <div className="adm-me">
+            <button className="adm-me" onClick={() => go('/app/settings')} aria-label="Your profile and settings">
               <span className="a-av">{initials(meP.name).slice(0, 2)}</span>
               <div><b>{meP.name}</b><span>{realRole === 'owner' ? 'Owner/admin' : 'Member · ' + (meP.team || 'Team')}</span></div>
-            </div>
+              <Icon name="cog" size="sm" />
+            </button>
             {live
               ? <button className="a-link" onClick={onSignOut}>Sign out</button>
               : <span className="ap t-violet"><i />Sample data</span>}
@@ -888,9 +1206,10 @@ export default function Workspace({ ws, apply, live, review, onExamples, me, rea
           <main className="adm-content" id="main-content">
             {view === 'home' && <CommandCentre ws={ws} role={role} me={meP} go={go} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} domain={domain} personal={personal} />}
             {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} onExamples={examples} />}
-            {view === 'needs' && <NeedsYou ws={ws} role={role} save={save} saving={saving} openEnq={openEnq} ann={ann} />}
+            {view === 'needs' && <NeedsYou ws={ws} role={role} save={save} saving={saving} openEnq={openEnq} ann={ann} go={go} live={live} />}
             {view === 'number' && (live ? <NumberPage ws={ws} role={role} save={save} saving={saving} /> : <NextReview which={view} go={go} role={role} />)}
-            {view === 'studio' && <NextReview which={view} go={go} role={role} />}
+            {view === 'studio' && (live ? <KlaroStudio ws={ws} role={role} save={save} saving={saving} teach={teach} go={go} /> : <NextReview which={view} go={go} role={role} />)}
+            {view === 'settings' && <Settings ws={ws} me={me} realRole={realRole} role={role} save={save} saving={saving} domain={domain} personal={personal} theme={theme} onToggleTheme={onToggleTheme} onSignOut={onSignOut} live={live} />}
           </main>
         </div>
       </div>
