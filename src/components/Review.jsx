@@ -70,9 +70,9 @@ function Seg({ value, options, onChange, label }) {
 }
 
 /** Reviewer tools. Not product UI. */
-export function ReviewPanel({ go, ann, setAnn, motion, setMotion, role, setRole, sim, setSim, onReset }) {
+export function ReviewPanel({ show, go, ann, setAnn, motion, setMotion, role, setRole, sim, setSim, onReset }) {
   const [open, setOpen] = useState(false);
-  if (typeof window !== 'undefined' && /[?&]clean=1/.test(window.location.search)) return null;
+  if (!show) return null;
   return (
     <div className="rv">
       {open && (
@@ -83,14 +83,14 @@ export function ReviewPanel({ go, ann, setAnn, motion, setMotion, role, setRole,
           <h4>View</h4>
           <label className="rv-row"><span>Annotations</span><input type="checkbox" checked={ann} onChange={(e) => setAnn(e.target.checked)} /></label>
           <label className="rv-row"><span>Reduced motion</span><input type="checkbox" checked={motion === 'reduce'} onChange={(e) => setMotion(e.target.checked ? 'reduce' : 'full')} /></label>
-          <div className="rv-row"><span>Signed in as</span><Seg label="Role" value={role} onChange={setRole} options={[['owner', 'Owner/admin'], ['member', 'Member']]} /></div>
+          <div className="rv-row"><span>View as</span><Seg label="Role" value={role} onChange={setRole} options={[['owner', 'Owner/admin'], ['member', 'Member']]} /></div>
           <h4>Simulated outcomes</h4>
           <div className="rv-row"><span>Website scan</span><Seg label="Website scan" value={sim.scan} onChange={(v) => setSim({ ...sim, scan: v })} options={[['success', 'Works'], ['fails', 'Fails']]} /></div>
           <div className="rv-row"><span>Test call</span><Seg label="Test call" value={sim.call} onChange={(v) => setSim({ ...sim, call: v })} options={[['answered', 'Answered'], ['unanswered', 'No answer'], ['fails', 'Fails']]} /></div>
           <div className="rv-row"><span>Confirmation email</span><Seg label="Confirmation email" value={sim.email} onChange={(v) => setSim({ ...sim, email: v })} options={[['fail-once', 'Fails once'], ['fail', 'Always fails'], ['ok', 'Delivers']]} /></div>
           <div className="rv-row"><span>Next save</span><Seg label="Next save" value={sim.save} onChange={(v) => setSim({ ...sim, save: v })} options={[['ok', 'Succeeds'], ['fail', 'Fails']]} /></div>
           <button className="rv-reset" onClick={() => { onReset(); setOpen(false); }}>Reset demo data</button>
-          <p className="rv-note">Everything in this preview is simulated: no calls are dialled, no emails are sent. Add ?clean=1 to the address to hide these tools.</p>
+          <p className="rv-note">Simulated outcomes only affect sample data. Sign-in codes and website reading are real. Add ?review=0 to the address to hide these tools.</p>
         </div>
       )}
       <button className="rv-btn" onClick={() => setOpen(!open)} aria-expanded={open}><span className="dot" />Review<span className="x">{ann ? ' · notes on' : ''}</span></button>

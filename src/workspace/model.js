@@ -1,155 +1,255 @@
-// Workspace data for the prototype: one restaurant, one shared enquiry (Alex's table for 8),
-// the same people and timestamps on every screen and role. All simulated.
+// Workspace model, shared by the browser and the API.
+// A workspace holds the business (from the user's own website or details), its team,
+// and a set of clearly labelled sample calls until a real number is live.
 
-export const PEOPLE = {
-  dami: { id: 'dami', name: 'Dami Ade', role: 'Owner/admin', team: 'Owner', email: 'dami@canalstreetkitchen.co.uk' },
-  tolu: { id: 'tolu', name: 'Tolu Bello', role: 'Member', team: 'Reservations', email: 'tolu@canalstreetkitchen.co.uk' }
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAYS_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+export const fmt = (mins) => String(Math.floor(((mins % 1440) + 1440) % 1440 / 60)).padStart(2, '0') + ':' + String(((mins % 60) + 60) % 60).padStart(2, '0');
+export const hhmm = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+export const dayLabel = (d) => DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+export const longLabel = (d) => DAYS_LONG[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS_LONG[d.getMonth()];
+const addMin = (d, m) => new Date(d.getTime() + m * 60000);
+const at = (d, days, h, m) => { const x = new Date(d.getTime()); x.setDate(x.getDate() + days); x.setHours(h, m, 0, 0); return x; };
+const slot = (d) => DAYS[d.getDay()] + ' ' + d.getDate() + ' ' + MONTHS[d.getMonth()] + ', ' + hhmm(d);
+const first = (n) => String(n || '').split(' ')[0];
+
+export function nameFromEmail(email) {
+  const local = String(email || '').split('@')[0].replace(/[0-9]+/g, ' ');
+  const parts = local.split(/[._\-+ ]+/).filter((w) => w.length > 1).slice(0, 2);
+  if (!parts.length) return 'Team member';
+  return parts.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+}
+
+export const SAMPLE_PEOPLE = {
+  dami: { id: 'dami', name: 'Dami Ade', role: 'owner', team: 'Owner', email: 'dami@canalstreetkitchen.co.uk' },
+  tolu: { id: 'tolu', name: 'Tolu Bello', role: 'member', team: 'Reservations', email: 'tolu@canalstreetkitchen.co.uk' }
 };
+export const SAMPLE_NOW = new Date(2026, 10, 26, 18, 20);
 
-export const fmt = (mins) => String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+/* Sample call stories per kind of business. `when` values are minutes before "now". */
+function stories(kind, biz, klaro, now) {
+  const k = klaro || 'Klaro';
+  const greet = 'Hi, thanks for calling ' + biz + '. This is ' + k + ', the virtual receptionist. How can I help?';
+  const fri = at(now, ((5 - now.getDay() + 7) % 7) || 7, 19, 0);
+  const soon = at(now, now.getDay() === 5 ? 3 : now.getDay() === 6 ? 2 : 1, 9, 30);
+  const map = {
+    restaurant: {
+      team: 'Reservations',
+      lead: { customer: 'Alex Morgan', phone: '+44 7700 900 318', topic: 'Table for 8 on ' + DAYS_LONG[fri.getDay()] + ' at 7pm', request: { party: 8, time: slot(fri) },
+        summary: 'Alex asked for a table for eight on ' + DAYS_LONG[fri.getDay()] + ' at 7pm. ' + k + ' explained that groups of eight are confirmed by the team and took a callback number.',
+        attempted: 'Passed to the team. No table was booked on the call.', next: 'Check availability for ' + slot(fri) + ' and call Alex back.', need: 'Availability needs checking',
+        transcript: [[k, greet], ['Alex', 'Hi, I’d like a table for eight this ' + DAYS_LONG[fri.getDay()] + ' at 7pm, please.'], [k, 'Groups of eight are confirmed by our team. Can I take your name and a number to call you back?'], ['Alex', 'Alex Morgan. It’s 07700 900318.'], [k, 'Thanks Alex. I’ll pass that to the team. They’ll confirm availability with you.']] },
+      second: { customer: 'Grace Obi', phone: '+44 7700 900 442', topic: 'Private dining for 20 next month', summary: 'Grace asked about private dining for 20 guests next month and whether a deposit is needed.', attempted: 'Shared opening hours. Passed the deposit question to the owner.', next: 'Send the private dining details and deposit terms.', need: 'Deposit question needs a person' },
+      faq: { topic: 'Asked about vegan options', q: 'Do you have vegan options?', a: 'Yes, there are vegan options on the menu. I can pass on any specific dietary needs to the team.' },
+      past: { customer: 'Ben Carter', phone: '+44 7700 900 127', topic: 'Moved a booking to 20:30', summary: 'Ben asked to move his booking for 4 from 20:00 to 20:30.', attempted: 'Booking system not connected. Change passed to the owner.', outcome: 'Moved to 20:30.', need: 'Booking change needs updating' }
+    },
+    plumbing: {
+      team: 'Engineers',
+      lead: { customer: 'Sam Okafor', phone: '+44 7700 900 214', topic: 'Boiler losing pressure, wants a visit', request: { time: slot(soon) },
+        summary: 'Sam said the boiler keeps losing pressure and asked for someone to come out. ' + k + ' took the postcode and a callback number.',
+        attempted: 'Visit requested. Nothing was booked on the call.', next: 'Confirm a visit time with Sam.', need: 'Visit time needs confirming',
+        transcript: [[k, greet], ['Sam', 'Hi, my boiler keeps losing pressure. Can someone come out?'], [k, 'I can pass that to the team. What’s your postcode and the best number to reach you?'], ['Sam', 'M20 2AB, and it’s 07700 900214.'], [k, 'Thanks Sam. The team will call you to confirm a time.']] },
+      second: { customer: 'Priya Shah', phone: '+44 7700 900 561', topic: 'Quote for a new bathroom', summary: 'Priya asked for a rough price for a full bathroom refit.', attempted: 'Explained that quotes need a visit. Passed to the owner.', next: 'Call Priya to arrange a quote visit.', need: 'Quote request needs a person' },
+      faq: { topic: 'Asked which areas you cover', q: 'Do you cover my area?', a: 'I’ll check the areas on file and pass your postcode to the team if it’s close to the edge.' },
+      past: { customer: 'Ade Bakare', phone: '+44 7700 900 733', topic: 'Moved a visit to the afternoon', summary: 'Ade asked to move a morning visit to the afternoon.', attempted: 'Calendar not connected. Change passed to the owner.', outcome: 'Moved to 14:00.', need: 'Visit change needs updating' }
+    },
+    dental: {
+      team: 'Reception',
+      lead: { customer: 'Hannah Reid', phone: '+44 7700 900 386', topic: 'New patient check-up', request: { time: slot(soon) },
+        summary: 'Hannah asked whether the practice is taking new patients and wants a check-up. ' + k + ' took her details.',
+        attempted: 'Appointment requested. Nothing was booked on the call.', next: 'Confirm a check-up time with Hannah.', need: 'Appointment needs confirming',
+        transcript: [[k, greet], ['Hannah', 'Hi, are you taking new patients? I’d like a check-up.'], [k, 'I’ll pass that to reception so they can confirm a time. Can I take your name and number?'], ['Hannah', 'Hannah Reid, 07700 900386.'], [k, 'Thanks Hannah. Reception will call you to confirm.']] },
+      second: { customer: 'Tom Ellis', phone: '+44 7700 900 652', topic: 'Chipped tooth, wants to be seen', summary: 'Tom chipped a tooth and asked how soon he could be seen.', attempted: 'Flagged as urgent for reception.', next: 'Call Tom about the next urgent slot.', need: 'Urgent appointment request' },
+      faq: { topic: 'Asked about parking', q: 'Is there parking nearby?', a: 'I’ll share what’s on file about parking and pass on anything else to reception.' },
+      past: { customer: 'Mia Lewis', phone: '+44 7700 900 278', topic: 'Moved a hygiene appointment', summary: 'Mia asked to move her hygiene appointment by a week.', attempted: 'Calendar not connected. Change passed to reception.', outcome: 'Moved to the following week.', need: 'Appointment change needs updating' }
+    },
+    salon: {
+      team: 'Stylists',
+      lead: { customer: 'Zainab Bello', phone: '+44 7700 900 419', topic: 'Braids on Saturday morning', request: { time: slot(at(now, ((6 - now.getDay() + 7) % 7) || 7, 10, 0)) },
+        summary: 'Zainab asked for knotless braids on Saturday morning. ' + k + ' took her details for the team to confirm.',
+        attempted: 'Appointment requested. Nothing was booked on the call.', next: 'Confirm a Saturday slot with Zainab.', need: 'Appointment needs confirming',
+        transcript: [[k, greet], ['Zainab', 'Hi, can I book knotless braids for Saturday morning?'], [k, 'I’ll pass that to the team to confirm. Can I take your name and number?'], ['Zainab', 'Zainab Bello, 07700 900419.'], [k, 'Thanks Zainab. The team will confirm your slot.']] },
+      second: { customer: 'Ella Hart', phone: '+44 7700 900 593', topic: 'Colour correction price', summary: 'Ella asked how much a colour correction would cost.', attempted: 'Explained it needs a consultation. Passed to the owner.', next: 'Offer Ella a consultation.', need: 'Pricing question needs a person' },
+      faq: { topic: 'Asked about deposits', q: 'Do I need to pay a deposit?', a: 'I’ll share the deposit policy on file and the team can confirm anything else.' },
+      past: { customer: 'Jade Moss', phone: '+44 7700 900 811', topic: 'Moved an appointment', summary: 'Jade asked to move her appointment to later in the day.', attempted: 'Calendar not connected. Change passed to the owner.', outcome: 'Moved to 15:00.', need: 'Appointment change needs updating' }
+    },
+    general: {
+      team: 'Team',
+      lead: { customer: 'Jordan Lee', phone: '+44 7700 900 345', topic: 'Wants to book an appointment', request: { time: slot(soon) },
+        summary: 'Jordan asked to book an appointment and left a callback number. ' + k + ' explained the team will confirm a time.',
+        attempted: 'Request passed to the team. Nothing was booked on the call.', next: 'Confirm a time with Jordan.', need: 'Appointment needs confirming',
+        transcript: [[k, greet], ['Jordan', 'Hi, I’d like to book an appointment, please.'], [k, 'I’ll pass that to the team so they can confirm a time. Can I take your name and number?'], ['Jordan', 'Jordan Lee, 07700 900345.'], [k, 'Thanks Jordan. The team will call you back to confirm.']] },
+      second: { customer: 'Chris Walsh', phone: '+44 7700 900 472', topic: 'Asked for a price', summary: 'Chris asked for a price that isn’t on file.', attempted: 'Took details. Passed the question to the owner.', next: 'Call Chris back with a price.', need: 'Pricing question needs a person' },
+      faq: { topic: 'Asked about opening hours', q: 'What time are you open today?', a: 'I’ll share the opening hours on file.' },
+      past: { customer: 'Sophie King', phone: '+44 7700 900 698', topic: 'Changed an appointment', summary: 'Sophie asked to move her appointment.', attempted: 'Calendar not connected. Change passed to the owner.', outcome: 'Moved to a later time.', need: 'Change needs updating' }
+    }
+  };
+  return map[kind] || map.general;
+}
 
-const ALEX_TRANSCRIPT = [
-  ['Klaro', 'Hi, thanks for calling Canal Street Kitchen. This is Klaro, the virtual receptionist. How can I help?'],
-  ['Alex', 'Hi, I’d like a table for eight this Friday at 7pm, please.'],
-  ['Klaro', 'Groups of eight are confirmed by our reservations team. Can I take your name and a number to call you back?'],
-  ['Alex', 'Alex Morgan. It’s 07700 900318.'],
-  ['Klaro', 'Thanks Alex. I’ll pass that to the reservations team. They’ll confirm availability with you.']
-];
-
-export function initialWorkspace(draft) {
+/**
+ * Build a workspace.
+ * draft: { bizName, klaroName, kind, services, testCall, url, ... }
+ * people: { id: { name, role: 'owner'|'member', team, email } }
+ */
+export function initialWorkspace(draft, people, ownerId, nowInput, sample) {
+  const now = nowInput ? new Date(nowInput) : SAMPLE_NOW;
+  const isSample = sample !== false && !people;
+  const P = people || SAMPLE_PEOPLE;
+  const owner = ownerId || Object.keys(P).find((id) => P[id].role === 'owner') || Object.keys(P)[0];
   const biz = (draft && draft.bizName) || 'Canal Street Kitchen';
   const klaro = (draft && draft.klaroName) || 'Klaro';
+  const kind = (draft && draft.kind) || (isSample ? 'restaurant' : 'general');
+  const S = stories(kind, biz, klaro, now);
+  const tLead = addMin(now, -10), tFaq = addMin(now, -38), tSecond = addMin(now, -75), tPast = at(now, -1, 16, 30);
+  const ownerName = P[owner] ? P[owner].name : 'Owner';
+  const L = S.lead;
+  const lf = first(L.customer);
   return {
-    biz, klaro,
-    clock: 18 * 60 + 20, // simulated "now": 18:20 on Wed 26 Nov
-    number: 'none', // none | requested | configuring | failed | live
-    demoCall: (draft && draft.testCall) || 'completed',
+    sample: isSample,
+    biz, klaro, kind, team: S.team, url: (draft && draft.url) || '',
+    services: (draft && draft.services) || [],
+    people: P, owner,
+    today: dayLabel(now), todayLong: longLabel(now),
+    clock: now.getHours() * 60 + now.getMinutes(),
+    savedAt: hhmm(addMin(now, -15)),
+    number: 'none',
+    demoCall: (draft && draft.testCall) || 'none',
     enquiries: [
       {
-        id: 'e1', customer: 'Alex Morgan', phone: '+44 7700 900 318', email: '', ally: { shape: 'circle', tile: 'violet' },
-        day: 'Wed 26 Nov', received: '18:10', topic: 'Table for 8 on Friday at 7pm',
-        request: { party: 8, time: 'Fri 28 Nov, 19:00' },
+        id: 'e1', customer: L.customer, phone: L.phone, email: '', ally: { shape: 'circle', tile: 'violet' },
+        day: dayLabel(tLead), received: hhmm(tLead), topic: L.topic, request: L.request,
         status: 'awaiting', owner: null, booking: 'awaiting', confirmed: null, delivery: 'none', deliveryLog: [], attempts: 0,
-        summary: 'Alex asked for a table for eight on Friday at 7pm. Klaro explained that groups of eight are confirmed by reservations and took a callback number.',
-        attempted: 'Passed to the reservations team. No table was booked on the call.',
-        next: 'Check availability for Friday 19:00 and call Alex back.',
-        repeat: '1 earlier enquiry · 12 Oct · asked about private dining · closed',
-        transcript: ALEX_TRANSCRIPT, duration: '1 min 12 s', needs: 'n1',
+        summary: L.summary, attempted: L.attempted, next: L.next,
+        repeat: '1 earlier enquiry · last month · closed',
+        transcript: L.transcript, duration: '1 min 12 s', needs: 'n1',
         timeline: [
-          { t: '18:10', by: 'Klaro', text: 'Answered Alex’s call (1 min 12 s).' },
-          { t: '18:11', by: 'Klaro', text: 'Created enquiry: table for 8, Fri 28 Nov 19:00. Callback +44 7700 900 318.' },
-          { t: '18:11', by: 'Klaro', text: 'Told Alex: “I’ll pass that to the reservations team. They’ll confirm availability with you.”' },
-          { t: '18:11', by: 'Klaro', text: 'Added to Needs You: availability needs checking.' }
+          { t: hhmm(tLead), by: klaro, text: 'Answered ' + lf + '’s call (1 min 12 s).' },
+          { t: hhmm(addMin(tLead, 1)), by: klaro, text: 'Created enquiry: ' + L.topic.charAt(0).toLowerCase() + L.topic.slice(1) + '. Callback ' + L.phone + '.' },
+          { t: hhmm(addMin(tLead, 1)), by: klaro, text: 'Told ' + lf + ': “' + L.transcript[L.transcript.length - 1][1] + '”' },
+          { t: hhmm(addMin(tLead, 1)), by: klaro, text: 'Added to Needs You: ' + L.need.toLowerCase() + '.' }
         ]
       },
       {
-        id: 'e2', customer: 'Grace Obi', phone: '+44 7700 900 442', ally: { shape: 'drip', tile: 'lime' },
-        day: 'Wed 26 Nov', received: '17:05', topic: 'Private dining for 20 in December',
-        status: 'open', owner: 'dami', booking: 'n/a', delivery: 'none', deliveryLog: [], attempts: 0,
-        summary: 'Grace asked about private dining for 20 guests on a Saturday in December and whether a deposit is needed.',
-        attempted: 'Shared opening hours. Passed the deposit question to the owner.',
-        next: 'Send the private dining menu and deposit terms.',
-        repeat: null, transcript: null, needs: 'n2',
+        id: 'e2', customer: S.second.customer, phone: S.second.phone, ally: { shape: 'drip', tile: 'lime' },
+        day: dayLabel(tSecond), received: hhmm(tSecond), topic: S.second.topic,
+        status: 'open', owner, booking: 'n/a', delivery: 'none', deliveryLog: [], attempts: 0,
+        summary: S.second.summary, attempted: S.second.attempted, next: S.second.next, repeat: null, transcript: null, needs: 'n2',
         timeline: [
-          { t: '17:05', by: 'Klaro', text: 'Answered Grace’s call (2 min 40 s).' },
-          { t: '17:07', by: 'Klaro', text: 'Added to Needs You: deposit question needs a person.' },
-          { t: '17:20', by: 'Dami Ade', text: 'Took ownership.' }
+          { t: hhmm(tSecond), by: klaro, text: 'Answered ' + first(S.second.customer) + '’s call (2 min 40 s).' },
+          { t: hhmm(addMin(tSecond, 2)), by: klaro, text: 'Added to Needs You: ' + S.second.need.toLowerCase() + '.' },
+          { t: hhmm(addMin(tSecond, 15)), by: ownerName, text: 'Took ownership.' }
         ]
       },
       {
         id: 'e3', customer: 'Unknown caller', phone: 'Number withheld', ally: { shape: 'square', tile: 'lilac' },
-        day: 'Wed 26 Nov', received: '17:42', topic: 'Asked about vegan options',
+        day: dayLabel(tFaq), received: hhmm(tFaq), topic: S.faq.topic,
         status: 'closed', owner: null, booking: 'n/a', delivery: 'none', deliveryLog: [], attempts: 0,
-        summary: 'The caller asked whether there are vegan options. Klaro answered from the approved facts.',
+        summary: 'The caller asked: “' + S.faq.q + '” ' + klaro + ' answered from the approved facts.',
         attempted: 'Answered from approved facts.', outcome: 'Answered on the call. No follow-up needed.',
-        next: null, repeat: null, transcript: [['Caller', 'Do you have vegan options?'], ['Klaro', 'Yes, we have several vegan and gluten-free dishes on the menu.']], needs: null,
-        timeline: [{ t: '17:42', by: 'Klaro', text: 'Answered from approved facts. Closed automatically.' }]
+        next: null, repeat: null, transcript: [['Caller', S.faq.q], [klaro, S.faq.a]], needs: null,
+        timeline: [{ t: hhmm(tFaq), by: klaro, text: 'Answered from approved facts. Closed automatically.' }]
       },
       {
-        id: 'e4', customer: 'Ben Carter', phone: '+44 7700 900 127', ally: { shape: 'drop', tile: 'amber' },
-        day: 'Tue 25 Nov', received: '16:30', topic: 'Move Thursday booking to 20:30',
-        status: 'closed', owner: 'dami', booking: 'confirmed', confirmed: 'Thu 27 Nov, 20:30', delivery: 'delivered', deliveryLog: [{ t: '16:55', ok: true, text: 'Confirmation text delivered.' }], attempts: 0,
-        summary: 'Ben asked to move his Thursday booking for 4 from 20:00 to 20:30.',
-        attempted: 'Booking system not connected. Change passed to the owner.', outcome: 'Moved to 20:30 by Dami.',
+        id: 'e4', customer: S.past.customer, phone: S.past.phone, ally: { shape: 'drop', tile: 'amber' },
+        day: dayLabel(tPast), received: hhmm(tPast), topic: S.past.topic,
+        status: 'closed', owner, booking: 'confirmed', confirmed: S.past.outcome, delivery: 'delivered',
+        deliveryLog: [{ t: hhmm(addMin(tPast, 25)), ok: true, text: 'Confirmation text delivered.' }], attempts: 0,
+        summary: S.past.summary, attempted: S.past.attempted, outcome: S.past.outcome + ' Done by ' + ownerName + '.',
         next: null, repeat: null, transcript: null, needs: 'n3',
         timeline: [
-          { t: '16:30', by: 'Klaro', text: 'Answered Ben’s call.' },
-          { t: '16:52', by: 'Dami Ade', text: 'Moved the booking to 20:30 and resolved Needs You.' },
-          { t: '16:55', by: 'System', text: 'Confirmation text delivered.' }
+          { t: hhmm(tPast), by: klaro, text: 'Answered ' + first(S.past.customer) + '’s call.' },
+          { t: hhmm(addMin(tPast, 22)), by: ownerName, text: S.past.outcome + ' Resolved Needs You.' },
+          { t: hhmm(addMin(tPast, 25)), by: 'System', text: 'Confirmation text delivered.' }
         ]
       }
     ],
     needs: [
-      { id: 'n1', enquiry: 'e1', reason: 'Availability needs checking', priority: 'High', owner: null, next: 'Check Friday 19:00 for 8 and call Alex back.', state: 'open', opened: '18:11', resolution: null },
-      { id: 'n2', enquiry: 'e2', reason: 'Deposit question needs a person', priority: 'Medium', owner: 'dami', next: 'Reply with the deposit terms.', state: 'open', opened: '17:07', resolution: null },
-      { id: 'n3', enquiry: 'e4', reason: 'Booking change needs the booking book updated', priority: 'Low', owner: 'dami', next: null, state: 'resolved', opened: 'Tue 16:31', resolution: 'Moved to 20:30 in the booking book · Dami Ade · Tue 16:52' }
+      { id: 'n1', enquiry: 'e1', reason: L.need, priority: 'High', owner: null, next: L.next, state: 'open', opened: hhmm(addMin(tLead, 1)), resolution: null },
+      { id: 'n2', enquiry: 'e2', reason: S.second.need, priority: 'Medium', owner, next: S.second.next, state: 'open', opened: hhmm(addMin(tSecond, 2)), resolution: null },
+      { id: 'n3', enquiry: 'e4', reason: S.past.need, priority: 'Low', owner, next: null, state: 'resolved', opened: DAYS[tPast.getDay()] + ' ' + hhmm(addMin(tPast, 1)), resolution: S.past.outcome + ' · ' + ownerName + ' · ' + DAYS[tPast.getDay()] + ' ' + hhmm(addMin(tPast, 22)) }
     ]
   };
 }
 
 const upd = (list, id, fn) => list.map((x) => (x.id === id ? fn(x) : x));
 const addTl = (e, t, by, text) => ({ ...e, timeline: e.timeline.concat([{ t, by, text }]) });
+const personName = (s, id) => (s.people && s.people[id] ? s.people[id].name : 'Someone');
+
+/** Which actions change the record (owner/admin only). */
+export const WRITE_ACTIONS = ['assign', 'attempt', 'confirm', 'send-result', 'told', 'resolve', 'reopen'];
 
 export function reducer(s, a) {
-  const now = fmt(s.clock + (a.mins || 2));
-  const clock = s.clock + (a.mins || 2);
-  const who = PEOPLE[a.actor] ? PEOPLE[a.actor].name : 'Dami Ade';
+  const minsNow = a.now && /^\d\d:\d\d$/.test(a.now) ? parseInt(a.now.slice(0, 2), 10) * 60 + parseInt(a.now.slice(3), 10) : s.clock + (a.mins || 2);
+  const now = fmt(minsNow);
+  const clock = minsNow;
+  const who = personName(s, a.actor);
   switch (a.type) {
     case 'reset': return initialWorkspace(a.draft);
+    case 'replace': return a.state;
     case 'assign': {
-      const name = a.owner ? PEOPLE[a.owner].name + ' (' + PEOPLE[a.owner].team + ')' : 'nobody';
-      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, owner: a.owner }, now, who, 'Assigned to ' + name + '.'));
+      const p = a.owner && s.people[a.owner];
+      const name = p ? p.name + (p.team ? ' (' + p.team + ')' : '') : 'nobody';
+      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, owner: a.owner || null }, now, who, 'Assigned to ' + name + '.'));
       const e = enquiries.find((x) => x.id === a.id);
-      const needs = e.needs ? upd(s.needs, e.needs, (n) => ({ ...n, owner: a.owner })) : s.needs;
+      const needs = e && e.needs ? upd(s.needs, e.needs, (n) => ({ ...n, owner: a.owner || null })) : s.needs;
       return { ...s, clock, enquiries, needs };
     }
-    case 'attempt': { // failed contact attempt: stays open with a next action
-      const spoke = PEOPLE[a.spokeBy].name;
-      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, attempts: e.attempts + 1, next: 'Try Alex again after 19:00.' }, now, spoke, 'Called Alex: no answer. Still awaiting confirmation. Recorded by ' + who + '.'));
+    case 'attempt': {
+      const spoke = personName(s, a.spokeBy);
+      const cur = s.enquiries.find((x) => x.id === a.id);
+      const fn = first(cur && cur.customer);
+      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, attempts: e.attempts + 1, next: 'Try ' + fn + ' again later today.' }, now, spoke, 'Called ' + fn + ': no answer. Still awaiting confirmation. Recorded by ' + who + '.'));
       const e = enquiries.find((x) => x.id === a.id);
-      const needs = e.needs ? upd(s.needs, e.needs, (n) => ({ ...n, next: 'Try Alex again after 19:00 (' + e.attempts + ' failed attempt' + (e.attempts > 1 ? 's' : '') + ').' })) : s.needs;
+      const needs = e.needs ? upd(s.needs, e.needs, (n) => ({ ...n, next: 'Try ' + fn + ' again later today (' + e.attempts + ' failed attempt' + (e.attempts > 1 ? 's' : '') + ').' })) : s.needs;
       return { ...s, clock, enquiries, needs };
     }
-    case 'confirm': { // owner/admin records the outcome after speaking to Alex
-      const spoke = PEOPLE[a.spokeBy].name;
+    case 'confirm': {
+      const spoke = personName(s, a.spokeBy);
+      const cur = s.enquiries.find((x) => x.id === a.id);
+      const fn = first(cur && cur.customer);
       let enquiries = upd(s.enquiries, a.id, (e) => {
-        let x = { ...e, status: 'confirmed', booking: 'confirmed', confirmed: a.time, email: a.email || e.email, next: 'Send Alex a written confirmation.' };
-        x = addTl(x, now, spoke, 'Spoke to Alex on the phone. Booking confirmed for ' + a.time + ', ' + a.party + ' guests.');
+        let x = { ...e, status: 'confirmed', booking: 'confirmed', confirmed: a.time, email: a.email || e.email, next: 'Send ' + fn + ' a written confirmation.' };
+        x = addTl(x, now, spoke, 'Spoke to ' + fn + ' on the phone. Confirmed for ' + a.time + (a.party ? ', ' + a.party + ' guests' : '') + '.');
         x = addTl(x, now, who, 'Recorded the outcome: confirmed by ' + spoke + ' at ' + now + '.');
         return x;
       });
       const e = enquiries.find((x) => x.id === a.id);
       let needs = s.needs;
       if (e.needs) {
-        needs = upd(s.needs, e.needs, (n) => ({ ...n, state: 'resolved', next: null, resolution: 'Booking confirmed with Alex · ' + who + ' · ' + now }));
-        enquiries = upd(enquiries, a.id, (x) => addTl(x, now, 'System', 'Left Needs You: booking confirmed.'));
+        needs = upd(s.needs, e.needs, (n) => ({ ...n, state: 'resolved', next: null, resolution: 'Confirmed with ' + fn + ' · ' + who + ' · ' + now }));
+        enquiries = upd(enquiries, a.id, (x) => addTl(x, now, 'System', 'Left Needs You: confirmed.'));
       }
       return { ...s, clock, enquiries, needs };
     }
-    case 'send-start':
-      return { ...s, enquiries: upd(s.enquiries, a.id, (e) => ({ ...e, delivery: 'sending' })) };
     case 'send-result': {
       const enquiries = upd(s.enquiries, a.id, (e) => {
+        const fn = first(e.customer);
         const log = e.deliveryLog.concat([{ t: now, ok: a.ok, channel: a.channel, text: a.ok ? (a.channel === 'text' ? 'Confirmation text delivered to ' + e.phone + '.' : 'Confirmation email delivered to ' + e.email + '.') : 'Confirmation email not delivered: email provider unavailable.' }]);
-        let x = { ...e, delivery: a.ok ? 'delivered' : 'failed', deliveryLog: log, next: a.ok ? null : 'Retry the confirmation, send it by text, or note that Alex was told on the call.', status: a.ok ? 'closed' : e.status };
+        let x = { ...e, delivery: a.ok ? 'delivered' : 'failed', deliveryLog: log, next: a.ok ? null : 'Retry the confirmation, send it by text, or note that ' + fn + ' was told on the call.', status: a.ok ? 'closed' : e.status };
         x = addTl(x, now, 'System', log[log.length - 1].text);
         return x;
       });
       return { ...s, clock, enquiries };
     }
     case 'told': {
-      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, delivery: 'told', status: 'closed', next: null }, now, who, 'Recorded that Alex was told the confirmed time on the call. No written confirmation sent.'));
+      const enquiries = upd(s.enquiries, a.id, (e) => addTl({ ...e, delivery: 'told', status: 'closed', next: null }, now, who, 'Recorded that ' + first(e.customer) + ' was told the confirmed time on the call. No written confirmation sent.'));
       return { ...s, clock, enquiries };
     }
     case 'resolve': {
       const n = s.needs.find((x) => x.id === a.id);
+      if (!n) return s;
       const needs = upd(s.needs, a.id, (x) => ({ ...x, state: 'resolved', next: null, resolution: a.reason + ' · ' + who + ' · ' + now }));
       const enquiries = n.enquiry ? upd(s.enquiries, n.enquiry, (e) => addTl(e, now, who, 'Resolved Needs You: ' + a.reason + '.')) : s.enquiries;
       return { ...s, clock, needs, enquiries };
     }
     case 'reopen': {
       const n = s.needs.find((x) => x.id === a.id);
-      const needs = upd(s.needs, a.id, (x) => ({ ...x, state: 'reopened', next: a.next || 'Check what changed and follow up.', resolution: x.resolution }));
+      if (!n) return s;
+      const needs = upd(s.needs, a.id, (x) => ({ ...x, state: 'reopened', next: a.next || 'Check what changed and follow up.' }));
       const enquiries = n.enquiry ? upd(s.enquiries, n.enquiry, (e) => addTl(e, now, who, 'Reopened Needs You.')) : s.enquiries;
       return { ...s, clock, needs, enquiries };
     }
@@ -161,6 +261,6 @@ export function counts(s) {
   const openEnq = s.enquiries.filter((e) => e.status === 'awaiting' || e.status === 'open' || e.status === 'confirmed').length;
   const needsOpen = s.needs.filter((n) => n.state === 'open' || n.state === 'reopened').length;
   const actions = s.enquiries.filter((e) => e.booking === 'awaiting' || e.delivery === 'failed' || (e.status === 'confirmed' && e.delivery === 'none')).length;
-  const callsToday = s.enquiries.filter((e) => e.day === 'Wed 26 Nov').length;
+  const callsToday = s.enquiries.filter((e) => e.day === s.today).length;
   return { openEnq, needsOpen, actions, callsToday };
 }

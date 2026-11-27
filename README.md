@@ -47,5 +47,13 @@ One story runs through every screen: Alex Morgan calls Canal Street Kitchen at 1
 
 - **Roles:** Owner/admin (Dami Ade, dami@canalstreetkitchen.co.uk) can assign and record outcomes. Member (Tolu Bello, tolu@…, Reservations) can only view, even when assigned. Switch from the header, the drawer or the review panel.
 - **Demo code:** 482913. No emails are sent and no calls are dialled.
-- **Review panel** (bottom right): jump to any screen, simulate scan/call/email/save outcomes, turn annotations and reduced motion on or off, reset the demo data. Add `?clean=1` to hide it.
+- **Review panel** (bottom right): jump to any screen, simulate scan/call/email/save outcomes, turn annotations and reduced motion on or off, reset the demo data. Shown only with `?review=1`.
 - **Annotations** (dock above the review button): for each screen, who can act, what input is needed, what record changes and where the next person sees it, plus state tags (demo, pending, live, failure, recovery) and product-review flags.
+
+## Real journey (27 Nov 2026)
+
+- `/api/scan` reads the business website (name, description, phone, email, address, opening hours, services, type of business). Private and internal addresses are blocked.
+- `/api/auth/start` and `/api/auth/verify` send and check a real 6-digit email code (Resend). The first person from a company email owns the workspace; colleagues on the same domain join as members.
+- `/api/workspace` loads and changes the shared workspace. Owner/admin-only changes are enforced on the server.
+- Setup steps for the email service and database: see **SETUP.md**.
+- Review tools are hidden unless `?review=1` is added to the address.

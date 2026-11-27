@@ -431,3 +431,18 @@ html[data-motion='reduce'] .a-drawer, html[data-motion='reduce'] .a-toast { anim
 .adm .a-drawer:focus, .adm .a-drawer:focus-visible { outline: none; }
 .adm .a-av { font-weight: 600; letter-spacing: .02em; }
 [data-theme='dark'] .rv-btn { border: 1px solid rgba(255,255,255,.16); background: #1d1c25; }
+
+/* sample note, team */
+.a-note { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px 12px 12px; border-radius: 99px; background: var(--a-card); border: 1px solid var(--a-line); box-shadow: var(--a-hi), var(--a-shadow); }
+.a-note p { flex: 1; min-width: 220px; margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--a-ink-2); }
+.a-note b { font-weight: 500; color: var(--a-ink); }
+.a-note-ic { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--a-sunk); border: 1px solid var(--a-line); flex: none; }
+.adm-team { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--a-line); }
+.adm-team-top { display: flex; justify-content: space-between; font-size: 13px; }
+.adm-team-top b { font-weight: 500; }
+.adm-team-top span { color: var(--a-muted); }
+.adm-team-avs { display: flex; }
+.adm-team-avs .a-av { margin-right: -6px; border: 2px solid var(--a-bg); }
+.adm-side-foot .a-link { align-self: flex-start; font-size: 13px; }
+.a-grid.one { grid-template-columns: 1fr; }
+@media (max-width: 720px) { .a-note { border-radius: 22px; } }

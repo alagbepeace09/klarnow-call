@@ -4,7 +4,11 @@ import Ally from './components/Ally.jsx';
 import Klaro from './components/Klaro.jsx';
 import { BrandMark, ThemeToggle } from './components/Brand.jsx';
 import { Tag } from './components/Review.jsx';
-import { PEOPLE, counts } from './workspace/model.js';
+import { counts } from './workspace/model.js';
+
+// Set from the current workspace on every render of <Workspace>.
+let PEOPLE = {};
+const peopleList = () => Object.values(PEOPLE);
 
 /* Status vocab: [label, tone]. Tones map to a dot colour. */
 const STATUS = { awaiting: ['Awaiting confirmation', 'amber'], open: ['Open', 'amber'], confirmed: ['Confirmed · follow-up open', 'violet'], closed: ['Closed', 'grey'] };
@@ -17,7 +21,7 @@ const Dot = ({ map, k, pre }) => {
   return <span className={'ap t-' + v[1]}><i />{pre ? <em>{pre}</em> : null}{v[0]}</span>;
 };
 const initials = (n) => n.split(' ').map((w) => w[0]).join('');
-const ownerName = (id) => (id ? PEOPLE[id].name : 'Unassigned');
+const ownerName = (id) => (id && PEOPLE[id] ? PEOPLE[id].name : 'Unassigned');
 const first = (n) => n.split(' ')[0];
 const two = (n) => String(n).padStart(2, '0');
 
@@ -31,29 +35,55 @@ function ReadOnly({ ann, what = 'change this enquiry' }) {
   );
 }
 
+function SampleNote({ ws, live, onSetup }) {
+  if (live) {
+    return (
+      <div className="a-note" role="note">
+        <span className="a-note-ic"><Icon name="info" size="sm" /></span>
+        <p><b>These calls are examples made for {ws.biz}.</b> They show how {ws.klaro} handles real ones. Your real calls appear here once your number is live.</p>
+        <span className="ap t-violet"><i />Sample calls</span>
+      </div>
+    );
+  }
+  return (
+    <div className="a-note" role="note">
+      <span className="a-note-ic"><Icon name="info" size="sm" /></span>
+      <p><b>You’re looking at a sample workspace.</b> Set up a receptionist for your own business to see it here with your details.</p>
+      <button className="ab ab-dark" onClick={onSetup}>Set up mine<Icon name="arrow" size="sm" /></button>
+    </div>
+  );
+}
+
 /* ---------- 05 Command Centre ---------- */
-function CommandCentre({ ws, role, go, openEnq, ann }) {
+function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup }) {
   const c = counts(ws);
-  const me = role === 'owner' ? PEOPLE.dami : PEOPLE.tolu;
   const openNeeds = ws.needs.filter((n) => n.state !== 'resolved');
   const lead = openNeeds[0] && ws.enquiries.find((e) => e.id === openNeeds[0].enquiry);
-  const today = ws.enquiries.filter((e) => e.day === 'Wed 26 Nov').sort((a, b) => (a.received < b.received ? 1 : -1));
+  const today = ws.enquiries.filter((e) => e.day === ws.today).sort((a, b) => (a.received < b.received ? 1 : -1));
   const mins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-  const span = [16 * 60, 19 * 60];
+  const lo = today.length ? Math.min(...today.map((e) => mins(e.received))) : ws.clock - 120;
+  const startH = Math.max(0, Math.floor(lo / 60) - (lo % 60 < 15 ? 1 : 0));
+  const span = [startH * 60, Math.min(24, startH + 3) * 60];
+  const hrs = [0, 1, 2, 3].map((k) => String((startH + k) % 24).padStart(2, '0') + ':00');
+  const hour = Math.floor(ws.clock / 60);
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const when = hour >= 17 ? 'tonight' : 'today';
   return (
     <div className="a-page">
       <header className="a-head">
         <div>
-          <p className="a-eyebrow">Wednesday 26 November · Command Centre</p>
-          <h1>Good evening, {first(me.name)}</h1>
-          <p className="a-sub">{c.needsOpen ? c.needsOpen + (c.needsOpen > 1 ? ' things need' : ' thing needs') + ' a person tonight.' : 'Nothing needs a person right now.'}</p>
+          <p className="a-eyebrow">{ws.todayLong} · Command Centre</p>
+          <h1>{greet}, {first(me.name)}</h1>
+          <p className="a-sub">{c.needsOpen ? c.needsOpen + (c.needsOpen > 1 ? ' things need' : ' thing needs') + ' a person ' + when + '.' : 'Nothing needs a person right now.'}</p>
         </div>
         <Tag kind="demo" show={ann} label="Sample workspace data" />
       </header>
 
+      <SampleNote ws={ws} live={live} onSetup={onSetup} />
+
       <div className="a-bento">
         <section className="a-card a-tonight">
-          <div className="a-card-top"><h2>Tonight</h2><button className="a-pill-btn" onClick={() => go('/app/enquiries')}>All calls<Icon name="upright" size="sm" /></button></div>
+          <div className="a-card-top"><h2>{when === 'tonight' ? 'Tonight' : 'Today'}</h2><button className="a-pill-btn" onClick={() => go('/app/enquiries')}>All calls<Icon name="upright" size="sm" /></button></div>
           <div className="a-big-row">
             <button className="a-big" onClick={() => go('/app/enquiries')} aria-label={c.callsToday + ' calls today. Open calls and enquiries'}>
               <span className="dotnum">{two(c.callsToday)}</span><span className="lab">Calls answered</span>
@@ -72,7 +102,7 @@ function CommandCentre({ ws, role, go, openEnq, ann }) {
           <div className="a-track" aria-hidden="true">
             <div className="a-ticks">{Array.from({ length: 37 }).map((_, i) => <i key={i} className={i % 12 === 0 ? 'h' : ''} />)}</div>
             {today.map((e) => <span key={e.id} className="a-mark" style={{ left: ((mins(e.received) - span[0]) / (span[1] - span[0]) * 100) + '%' }}><b>{first(e.customer === 'Unknown caller' ? 'Caller' : e.customer)}</b></span>)}
-            <div className="a-hours"><span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span></div>
+            <div className="a-hours">{hrs.map((h) => <span key={h}>{h}</span>)}</div>
           </div>
         </section>
 
@@ -98,9 +128,9 @@ function CommandCentre({ ws, role, go, openEnq, ann }) {
         <section className="a-card a-dark">
           <div className="a-card-top"><h2>Phone number</h2><span className="ap t-amber on-dark"><i />Not live</span></div>
           <p className="a-dark-t">No number yet</p>
-          <p className="a-dark-p">Calls can’t reach {ws.klaro} until a number is active. Everything here is sample data for this review.</p>
+          <p className="a-dark-p">Calls can’t reach {ws.klaro} until a number is active. Until then, the calls here are examples.</p>
           <div className="a-dark-foot">
-            <span className="a-mute">Draft saved · 18:05</span>
+            <span className="a-mute">Saved · {ws.savedAt}</span>
             {role === 'owner'
               ? <button className="ab ab-white" onClick={() => go('/app/number')}>Set up a number<Icon name="arrow" size="sm" /></button>
               : <span className="a-mute">An owner sets this up</span>}
@@ -118,7 +148,7 @@ function CommandCentre({ ws, role, go, openEnq, ann }) {
                 <Ally shape={e.ally.shape} tile={e.ally.tile} size={36} radius={18} />
                 <span className="m"><b>{e.customer}</b><span>{e.topic}</span></span>
                 <Dot map={STATUS} k={e.status} />
-                <span className="t">{e.day === 'Wed 26 Nov' ? e.received : 'Tue'}</span>
+                <span className="t">{e.day === ws.today ? e.received : e.day.slice(0, 3)}</span>
               </button>
             ))}
           </div>
@@ -139,7 +169,7 @@ function CommandCentre({ ws, role, go, openEnq, ann }) {
 }
 
 /* ---------- 07 Calls & Enquiries ---------- */
-function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann }) {
+function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann, live, onSetup }) {
   const needle = q.trim().toLowerCase();
   const list = ws.enquiries.filter((e) => {
     if (needle && !(e.customer + ' ' + e.topic + ' ' + e.phone).toLowerCase().includes(needle)) return false;
@@ -155,6 +185,7 @@ function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann }) {
         <div><p className="a-eyebrow">Calls & Enquiries</p><h1>Every call, and what happens next</h1></div>
         <Tag kind="demo" show={ann} label="Sample calls" />
       </header>
+      <SampleNote ws={ws} live={live} onSetup={onSetup} />
       <div className="a-card a-table-card">
         <div className="a-card-top">
           <div className="a-seg" role="tablist" aria-label="Filter enquiries">
@@ -181,13 +212,13 @@ function Enquiries({ ws, role, filter, setFilter, q, openEnq, ann }) {
   );
 }
 
-function CallerView({ e }) {
+function CallerView({ e, biz }) {
   const [pos, setPos] = useState(0.36);
   const bars = 46;
   return (
     <div className="a-call">
       <div className="a-call-top">
-        <div><b>{e.customer}</b><span>Called Canal Street Kitchen</span></div>
+        <div><b>{e.customer}</b><span>Called {biz}</span></div>
         <span className="dotnum sm">{e.duration ? e.duration.replace(' min ', ':').replace(' s', '') : '—'}</span>
         <div className="a-wave" aria-hidden="true">{Array.from({ length: 64 }).map((_, i) => <i key={i} style={{ height: (18 + Math.abs(Math.sin(i * 0.55) * 46) + (i % 5) * 4) + '%' }} />)}</div>
       </div>
@@ -218,15 +249,16 @@ function CallerView({ e }) {
   );
 }
 
-function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go, ann }) {
+function Drawer({ ws, e, role, setRole, canPreview, meId, apply, saving, save, sim, onClose, go, ann, live }) {
   const ref = useRef(null);
   const [tab, setTab] = useState('team');
   const [mode, setMode] = useState(null);
   const [result, setResult] = useState('reached');
   const [time, setTime] = useState(e.request ? e.request.time : '');
   const [party, setParty] = useState(e.request ? String(e.request.party) : '');
-  const [spokeBy, setSpokeBy] = useState(e.owner || 'dami');
-  const [email, setEmail] = useState('alex.morgan@example.com');
+  const [spokeBy, setSpokeBy] = useState(e.owner || meId);
+  const [email, setEmail] = useState(first(e.customer).toLowerCase() + '@example.com');
+  const [sending, setSending] = useState(false);
   const [err, setErr] = useState('');
   const owner = role === 'owner';
   const need = e.needs ? ws.needs.find((n) => n.id === e.needs) : null;
@@ -241,20 +273,21 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); if (prev && prev.focus) prev.focus(); };
   }, []);
-  useEffect(() => { setSpokeBy(e.owner || 'dami'); }, [e.owner]);
+  useEffect(() => { setSpokeBy(e.owner || meId); }, [e.owner]);
 
   const submitOutcome = (ev) => {
     ev.preventDefault();
     if (result === 'reached' && !time.trim()) { setErr('Add the confirmed date and time.'); return; }
     setErr('');
     if (result === 'none') save({ type: 'attempt', id: e.id, spokeBy, mins: 6 }, () => setMode(null));
-    else save({ type: 'confirm', id: e.id, spokeBy, time: time.trim(), party: party || '8', email: email.trim(), mins: 8 }, () => setMode(null));
+    else save({ type: 'confirm', id: e.id, spokeBy, time: time.trim(), party: e.request && e.request.party ? (party || String(e.request.party)) : '', email: email.trim(), mins: 8 }, () => setMode(null));
   };
   const send = (channel) => {
-    dispatch({ type: 'send-start', id: e.id });
+    setSending(true);
     const ok = channel === 'text' ? true : sim.email === 'ok' ? true : sim.email === 'fail' ? false : fails >= 1;
-    setTimeout(() => dispatch({ type: 'send-result', id: e.id, ok, channel, mins: fails ? 3 : 2 }), 1100);
+    setTimeout(() => save({ type: 'send-result', id: e.id, ok, channel, mins: fails ? 3 : 2 }, null, true).finally(() => setSending(false)), 1100);
   };
+  const delivery = sending ? 'sending' : e.delivery;
 
   return (
     <div className="a-scrim" onClick={onClose}>
@@ -267,7 +300,7 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
         <div className="a-dr-status">
           <Dot map={STATUS} k={e.status} />
           {e.booking !== 'n/a' && <Dot map={BOOKING} k={e.booking} pre="Booking" />}
-          {(e.booking === 'confirmed' || e.delivery !== 'none') && <Dot map={DELIVERY} k={e.delivery} pre="Email" />}
+          {(e.booking === 'confirmed' || e.delivery !== 'none') && <Dot map={DELIVERY} k={delivery} pre="Email" />}
           <Tag kind={e.delivery === 'failed' ? 'failure' : e.booking === 'awaiting' ? 'pending' : 'live'} show={ann} label="Booking and delivery are separate statuses" />
         </div>
 
@@ -276,16 +309,18 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
             <button role="tab" aria-selected={tab === 'team'} className={tab === 'team' ? 'on' : ''} onClick={() => setTab('team')}>Team view</button>
             <button role="tab" aria-selected={tab === 'caller'} className={tab === 'caller' ? 'on' : ''} onClick={() => setTab('caller')}>What {fn} heard</button>
           </div>
-          <div className="a-seg sm dashed" role="group" aria-label="View as (review control)">
-            <button className={role === 'owner' ? 'on' : ''} aria-pressed={role === 'owner'} onClick={() => setRole('owner')}>Dami</button>
-            <button className={role === 'member' ? 'on' : ''} aria-pressed={role === 'member'} onClick={() => setRole('member')}>Tolu</button>
-          </div>
+          {canPreview && (
+            <div className="a-seg sm dashed" role="group" aria-label="Preview as">
+              <button className={role === 'owner' ? 'on' : ''} aria-pressed={role === 'owner'} onClick={() => setRole('owner')}>Owner</button>
+              <button className={role === 'member' ? 'on' : ''} aria-pressed={role === 'member'} onClick={() => setRole('member')}>Member</button>
+            </div>
+          )}
         </div>
 
         {tab === 'caller' && (
           <div className="a-dr-body">
             <p className="a-fine">{fn} never sees this workspace. This is the call as {fn} heard it, and what was sent afterwards.</p>
-            <CallerView e={e} />
+            <CallerView e={e} biz={ws.biz} />
             <div className="a-card flat">
               <div className="a-card-top"><h3>Messages to {fn}</h3></div>
               {e.deliveryLog.length === 0 && e.delivery !== 'told' && <p className="a-empty">Nothing sent yet.{e.booking === 'awaiting' ? ' ' + fn + ' is waiting for the team to confirm availability.' : ''}</p>}
@@ -301,7 +336,7 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
             <div className="a-card flat">
               <div className="a-card-top"><h3>Summary</h3>{e.repeat && <span className="ap t-violet"><i />Repeat caller</span>}</div>
               <p className="a-p">{e.summary}</p>
-              {e.request && <div className="a-chips"><span>Party of {e.request.party}</span><span>{e.request.time}</span><span>Callback {e.phone}</span></div>}
+              {e.request && <div className="a-chips">{e.request.party ? <span>Party of {e.request.party}</span> : null}<span>{e.request.time}</span><span>Callback {e.phone}</span></div>}
               <dl className="a-dl">
                 <div><dt>{ws.klaro} did</dt><dd>{e.attempted}</dd></div>
                 {e.outcome && <div><dt>Outcome</dt><dd>{e.outcome}</dd></div>}
@@ -316,14 +351,15 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
               {owner ? (
                 <>
                   <label className="sr-only" htmlFor="dr-own">Assign to</label>
-                  <div className="a-select"><select id="dr-own" value={e.owner || ''} disabled={saving} onChange={(ev) => save({ type: 'assign', id: e.id, owner: ev.target.value || null, actor: 'dami', mins: 2 })}>
-                    <option value="">Unassigned</option><option value="dami">Dami Ade · Owner</option><option value="tolu">Tolu Bello · Reservations</option>
+                  <div className="a-select"><select id="dr-own" value={e.owner || ''} disabled={saving} onChange={(ev) => save({ type: 'assign', id: e.id, owner: ev.target.value || null, mins: 2 })}>
+                    <option value="">Unassigned</option>{peopleList().map((p) => <option key={p.id} value={p.id}>{p.name} · {p.role === 'owner' ? 'Owner' : p.team}</option>)}
                   </select><Icon name="chev" size="sm" /></div>
+                  {peopleList().length < 2 && <p className="a-fine">Only you so far. Colleagues appear here after they sign in with a work email from your company.</p>}
                   <p className="a-fine">Assigning puts it in their Needs You. Only owners and admins record the outcome.</p>
                 </>
               ) : (
                 <>
-                  <p className="a-owner">{e.owner ? <><span className="a-av sm">{initials(PEOPLE[e.owner].name)}</span>{PEOPLE[e.owner].name}{e.owner === 'tolu' ? ' (you)' : ''}</> : 'Unassigned'}</p>
+                  <p className="a-owner">{e.owner && PEOPLE[e.owner] ? <><span className="a-av sm">{initials(PEOPLE[e.owner].name)}</span>{PEOPLE[e.owner].name}{e.owner === meId ? ' (you)' : ''}</> : 'Unassigned'}</p>
                   <p className="a-fine">Only owners and admins can reassign or change this enquiry.</p>
                 </>
               )}
@@ -338,18 +374,18 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
                   <form className="a-form" onSubmit={submitOutcome} noValidate>
                     <fieldset className="a-choice">
                       <legend>What happened?</legend>
-                      <label className={result === 'reached' ? 'on' : ''}><input type="radio" name="res" checked={result === 'reached'} onChange={() => setResult('reached')} /><span><b>Confirmed</b>Spoke to {fn} and booked the table</span></label>
+                      <label className={result === 'reached' ? 'on' : ''}><input type="radio" name="res" checked={result === 'reached'} onChange={() => setResult('reached')} /><span><b>Confirmed</b>Spoke to {fn} and agreed a time</span></label>
                       <label className={result === 'none' ? 'on' : ''}><input type="radio" name="res" checked={result === 'none'} onChange={() => setResult('none')} /><span><b>No answer</b>Keep it open with a next step</span></label>
                     </fieldset>
                     {result === 'reached' && (
-                      <div className="a-grid">
+                      <div className={'a-grid' + (e.request && e.request.party ? '' : ' one')}>
                         <div className="a-field"><label htmlFor="dr-time">Confirmed for</label><input id="dr-time" className={err ? 'bad' : ''} value={time} onChange={(ev) => setTime(ev.target.value)} aria-invalid={!!err} /></div>
-                        <div className="a-field"><label htmlFor="dr-party">Guests</label><input id="dr-party" inputMode="numeric" value={party} onChange={(ev) => setParty(ev.target.value.replace(/\D/g, ''))} /></div>
+                        {e.request && e.request.party ? <div className="a-field"><label htmlFor="dr-party">Guests</label><input id="dr-party" inputMode="numeric" value={party} onChange={(ev) => setParty(ev.target.value.replace(/\D/g, ''))} /></div> : null}
                         <div className="a-field full"><label htmlFor="dr-email">{fn}’s email for the confirmation <em>Optional</em></label><input id="dr-email" type="email" value={email} onChange={(ev) => setEmail(ev.target.value)} /></div>
                       </div>
                     )}
                     <div className="a-field"><label htmlFor="dr-by">Who {result === 'reached' ? 'spoke to' : 'called'} {fn}?</label>
-                      <div className="a-select"><select id="dr-by" value={spokeBy} onChange={(ev) => setSpokeBy(ev.target.value)}><option value="dami">Dami Ade</option><option value="tolu">Tolu Bello</option></select><Icon name="chev" size="sm" /></div>
+                      <div className="a-select"><select id="dr-by" value={spokeBy} onChange={(ev) => setSpokeBy(ev.target.value)}>{peopleList().map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select><Icon name="chev" size="sm" /></div>
                     </div>
                     {err && <p className="a-err" role="alert"><Icon name="alert" size="sm" />{err}</p>}
                     <div className="a-actions">
@@ -365,30 +401,31 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
             {e.booking === 'confirmed' && (
               <div className="a-pair">
                 <div className="a-card flat a-pair-l">
-                  <h3>Booking</h3>
-                  <p className="a-pair-t">Table for {e.request ? e.request.party : 4}<br />{e.confirmed}</p>
+                  <h3>{e.request && e.request.party ? 'Booking' : 'Confirmed time'}</h3>
+                  <p className="a-pair-t">{e.request && e.request.party ? 'Table for ' + e.request.party : e.topic}<br />{e.confirmed}</p>
                   <div className="a-chips"><span className="ok">Confirmed</span>{e.owner && <span>{ownerName(e.owner)}</span>}</div>
                   <p className="a-mute sm a-pair-f">Unchanged by email delivery</p>
                 </div>
                 <div className={'a-card a-pair-r' + (e.delivery === 'failed' ? ' bad' : '')}>
                   <h3>Written confirmation</h3>
-                  {e.delivery === 'none' && <p className="a-pair-p">Nothing sent yet. {e.email ? 'Email it to ' + e.email + ', or send a text.' : 'No email on file.'}</p>}
-                  {e.delivery === 'sending' && <p className="a-pair-p" role="status">Sending…</p>}
+                  {delivery === 'none' && <p className="a-pair-p">Nothing sent yet. {e.email ? 'Email it to ' + e.email + ', or send a text.' : 'No email on file.'}</p>}
+                  {delivery === 'sending' && <p className="a-pair-p" role="status">Sending…</p>}
                   {e.delivery === 'failed' && <p className="a-pair-p" role="alert">Email not delivered. The provider was unavailable.<br /><span className="a-mute">Last attempt {lastAttempt.t}{fails > 1 ? ' · ' + fails + ' attempts' : ''}</span></p>}
                   {e.delivery === 'delivered' && <p className="a-pair-p">{lastAttempt.text}<br /><span className="a-mute">Delivered {lastAttempt.t}</span></p>}
                   {e.delivery === 'told' && <p className="a-pair-p">{fn} heard the confirmed time on the call. Nothing was sent.</p>}
                   <div className="a-pair-foot">
-                    <Dot map={DELIVERY} k={e.delivery} />
-                    {owner && e.delivery === 'none' && <div className="a-actions"><button className="ab ab-white" onClick={() => send('email')} disabled={!e.email}>Email<Icon name="arrow" size="sm" /></button><button className="ab ab-glass" onClick={() => send('text')}>Text</button></div>}
+                    <Dot map={DELIVERY} k={delivery} />
+                    {owner && delivery === 'none' && <div className="a-actions"><button className="ab ab-white" onClick={() => send('email')} disabled={!e.email}>Email<Icon name="arrow" size="sm" /></button><button className="ab ab-glass" onClick={() => send('text')}>Text</button></div>}
                     {owner && e.delivery === 'failed' && <div className="a-actions"><button className="ab ab-white" onClick={() => send('email')}>Retry email<Icon name="arrow" size="sm" /></button></div>}
                   </div>
                   {owner && e.delivery === 'failed' && (
                     <div className="a-pair-alt">
                       <button className="ab ab-glass" onClick={() => send('text')}>Send by text</button>
-                      <button className="ab ab-glass" onClick={() => save({ type: 'told', id: e.id, actor: 'dami', mins: 1 })}>{fn} was told on the call</button>
+                      <button className="ab ab-glass" onClick={() => save({ type: 'told', id: e.id, mins: 1 })}>{fn} was told on the call</button>
                     </div>
                   )}
                   {!owner && (e.delivery === 'none' || e.delivery === 'failed') && <p className="a-mute sm">An owner or admin can send or retry this.</p>}
+                  {live && <p className="a-mute sm">Sample call: no email or text is really sent to this caller.</p>}
                   <Tag kind={e.delivery === 'failed' ? 'failure' : e.delivery === 'delivered' ? 'recovery' : 'pending'} show={ann} label={e.delivery === 'failed' ? 'Retry, text, or record told on call' : null} />
                 </div>
               </div>
@@ -407,6 +444,7 @@ function Drawer({ ws, e, role, setRole, dispatch, saving, save, sim, onClose, go
 
 /* ---------- 08 Needs You ---------- */
 function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
+  const lead = ws.enquiries.find((x) => x.id === 'e1');
   const [tab, setTab] = useState('open');
   const [resolving, setResolving] = useState(null);
   const [reason, setReason] = useState('');
@@ -417,7 +455,7 @@ function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
     ev.preventDefault();
     if (!reason.trim()) { setErr('Add a reason so the team knows why this was closed.'); return; }
     setErr('');
-    save({ type: 'resolve', id: n.id, reason: reason.trim(), actor: 'dami', mins: 2 }, () => { setResolving(null); setReason(''); });
+    save({ type: 'resolve', id: n.id, reason: reason.trim(), mins: 2 }, () => { setResolving(null); setReason(''); });
   };
   return (
     <div className="a-page">
@@ -454,13 +492,13 @@ function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
                   {owner && n.state !== 'resolved' && (
                     <>
                       <label className="sr-only" htmlFor={'own-' + n.id}>Assign {n.reason}</label>
-                      <div className="a-select pill"><select id={'own-' + n.id} value={n.owner || ''} disabled={saving} onChange={(ev) => save({ type: 'assign', id: e.id, owner: ev.target.value || null, actor: 'dami', mins: 2 })}>
-                        <option value="">Unassigned</option><option value="dami">Dami Ade</option><option value="tolu">Tolu Bello</option>
+                      <div className="a-select pill"><select id={'own-' + n.id} value={n.owner || ''} disabled={saving} onChange={(ev) => save({ type: 'assign', id: e.id, owner: ev.target.value || null, mins: 2 })}>
+                        <option value="">Unassigned</option>{peopleList().map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select><Icon name="chev" size="sm" /></div>
                       {resolving !== n.id && <button className="ab ab-dark" onClick={() => { setResolving(n.id); setReason(''); setErr(''); }}>Resolve</button>}
                     </>
                   )}
-                  {owner && n.state === 'resolved' && <button className="ab ab-light" disabled={saving} onClick={() => save({ type: 'reopen', id: n.id, actor: 'dami', mins: 1 })}>Reopen</button>}
+                  {owner && n.state === 'resolved' && <button className="ab ab-light" disabled={saving} onClick={() => save({ type: 'reopen', id: n.id, mins: 1 })}>Reopen</button>}
                 </div>
               </div>
               {resolving === n.id && (
@@ -469,7 +507,7 @@ function NeedsYou({ ws, role, save, saving, openEnq, ann }) {
                     <input id={'rs-' + n.id} className={err ? 'bad' : ''} value={reason} onChange={(ev) => setReason(ev.target.value)} placeholder="e.g. Sent the deposit terms by email" aria-invalid={!!err} autoFocus /></div>
                   {err && <p className="a-err" role="alert"><Icon name="alert" size="sm" />{err}</p>}
                   <div className="a-actions"><button className="ab ab-dark" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Resolve item'}</button><button className="ab ab-light" type="button" onClick={() => setResolving(null)}>Cancel</button></div>
-                  {n.enquiry === 'e1' && <p className="a-fine">For Alex’s table, record the outcome on the enquiry instead. It resolves this item for you.</p>}
+                  {n.enquiry === 'e1' && lead && <p className="a-fine">For {first(lead.customer)}’s request, record the outcome on the enquiry instead. It resolves this item for you.</p>}
                 </form>
               )}
             </article>
@@ -504,17 +542,20 @@ function NextReview({ which, go, role }) {
 }
 
 /* ---------- shell ---------- */
-export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId, filter, go, sim, setSim, onHome, theme, onToggleTheme, motion, ann }) {
+export default function Workspace({ ws, apply, live, me, realRole, domain, personal, role, setRole, view, enquiryId, filter, go, sim, onHome, onSetup, onSignOut, theme, onToggleTheme, motion, ann }) {
+  PEOPLE = ws.people || {};
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState(null);
   const [q, setQ] = useState('');
   const searchRef = useRef(null);
   const c = counts(ws);
-  const me = role === 'owner' ? PEOPLE.dami : PEOPLE.tolu;
+  const meP = PEOPLE[me] || { id: me, name: 'You', role: realRole, team: '' };
+  const canPreview = !live || realRole === 'owner';
   const e = enquiryId ? ws.enquiries.find((x) => x.id === enquiryId) : null;
   const base = view === 'needs' ? '/app/needs-you' : view === 'home' ? '/app' : '/app/enquiries';
   const openEnq = (id) => go(base + '?e=' + id);
   const closeEnq = () => go(base + (view === 'enquiries' && filter !== 'all' ? '?f=' + filter : ''));
+  const team = Object.values(PEOPLE);
 
   useEffect(() => {
     const onKey = (ev) => { if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'k') { ev.preventDefault(); if (searchRef.current) searchRef.current.focus(); } };
@@ -523,16 +564,16 @@ export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId
   }, []);
 
   const flash = (t, kind) => { setToast({ t, kind }); clearTimeout(flash.t); flash.t = setTimeout(() => setToast(null), 4200); };
-  const save = (action, after) => {
-    if (role !== 'owner') return;
+  const save = (action, after, quiet) => {
+    if (role !== 'owner') { flash('Only owners and admins can change this. Nothing was changed.', 'bad'); return Promise.resolve(); }
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      if (sim.save === 'fail') { setSim({ ...sim, save: 'ok' }); flash('Couldn’t save. Nothing changed. Try again.', 'bad'); return; }
-      dispatch(action);
-      if (after) after();
-      flash(action.type === 'assign' ? 'Assigned. Shown in Needs You and on the enquiry.' : action.type === 'confirm' ? 'Outcome saved. Needs You and the Command Centre are updated.' : action.type === 'attempt' ? 'Attempt saved. The item stays open.' : action.type === 'resolve' ? 'Resolved. The enquiry timeline has a new entry.' : action.type === 'reopen' ? 'Reopened. It’s back in Needs You.' : 'Saved.', 'ok');
-    }, 700);
+    return Promise.resolve(apply({ ...action, actor: me }))
+      .then(() => {
+        if (after) after();
+        if (!quiet) flash(action.type === 'assign' ? 'Assigned. Shown in Needs You and on the enquiry.' : action.type === 'confirm' ? 'Outcome saved. Needs You and the Command Centre are updated.' : action.type === 'attempt' ? 'Attempt saved. The item stays open.' : action.type === 'resolve' ? 'Resolved. The enquiry timeline has a new entry.' : action.type === 'reopen' ? 'Reopened. It’s back in Needs You.' : 'Saved.', 'ok');
+      })
+      .catch((err) => flash((err && err.message) || 'Couldn’t save. Nothing changed. Try again.', 'bad'))
+      .finally(() => setSaving(false));
   };
 
   const nav = [
@@ -543,6 +584,8 @@ export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId
     ['studio', '/app/studio', 'Klaro Studio', 'sparkle', null, true]
   ];
   const title = { home: 'Overview', enquiries: 'Calls & Enquiries', needs: 'Needs You', number: 'Number & Go Live', studio: 'Klaro Studio' }[view];
+  const words = String(ws.biz || '').split(' ');
+  const half = Math.ceil(words.length / 2);
 
   return (
     <div className={'kc adm' + (motion === 'reduce' ? ' rm' : '')}>
@@ -551,11 +594,13 @@ export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId
         <aside className="adm-side" aria-label="Workspace">
           <div className="adm-side-top">
             <a className="adm-brand" href="/" onClick={(ev) => { ev.preventDefault(); onHome(); }} aria-label="Klaro Call home"><BrandMark /><span>klaro<em>call</em></span></a>
-            <button className="a-circle sm" onClick={onHome} aria-label="Leave the workspace"><Icon name="out" size="sm" /></button>
+            {live
+              ? <button className="a-circle sm" onClick={onSignOut} aria-label="Sign out" title="Sign out"><Icon name="out" size="sm" /></button>
+              : <button className="a-circle sm" onClick={onHome} aria-label="Leave the sample workspace" title="Leave"><Icon name="out" size="sm" /></button>}
           </div>
           <div className="adm-title">
-            <span className="a-eyebrow">Workspace</span>
-            <h2>Canal Street<br />Kitchen</h2>
+            <span className="a-eyebrow">{live ? 'Workspace' : 'Sample workspace'}</span>
+            <h2>{words.slice(0, half).join(' ')}{words.length > 1 && <br />}{words.slice(half).join(' ')}</h2>
           </div>
           <label className="adm-search">
             <Icon name="search" size="sm" />
@@ -573,11 +618,19 @@ export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId
             ))}
           </nav>
           <div className="adm-side-foot">
-            <div className="adm-me">
-              <span className="a-av">{initials(me.name)}</span>
-              <div><b>{me.name}</b><span>{role === 'owner' ? 'Owner/admin' : 'Member · ' + me.team}</span></div>
+            <div className="adm-team">
+              <div className="adm-team-top"><b>Team</b><span>{team.length} {team.length === 1 ? 'person' : 'people'}</span></div>
+              <div className="adm-team-avs">{team.slice(0, 6).map((p) => <span key={p.id} className="a-av sm" title={p.name + ' · ' + (p.role === 'owner' ? 'Owner/admin' : 'Member')}>{initials(p.name).slice(0, 2)}</span>)}</div>
+              {live && !personal && <p className="a-fine">Colleagues join by signing in with an @{domain} email.</p>}
+              {live && personal && <p className="a-fine">Personal workspace. Sign in with a company email to share it with a team.</p>}
             </div>
-            <span className="ap t-violet"><i />Preview · sample data</span>
+            <div className="adm-me">
+              <span className="a-av">{initials(meP.name).slice(0, 2)}</span>
+              <div><b>{meP.name}</b><span>{realRole === 'owner' ? 'Owner/admin' : 'Member · ' + (meP.team || 'Team')}</span></div>
+            </div>
+            {live
+              ? <button className="a-link" onClick={onSignOut}>Sign out</button>
+              : <span className="ap t-violet"><i />Sample data</span>}
           </div>
         </aside>
 
@@ -585,28 +638,30 @@ export default function Workspace({ ws, dispatch, role, setRole, view, enquiryId
           <div className="adm-bar">
             <div className="adm-bar-l">
               <span className="adm-crumb">{title}</span>
-              <span className="adm-time"><Icon name="clock" size="sm" />Wed 26 Nov · {String(Math.floor(ws.clock / 60)).padStart(2, '0')}:{two(ws.clock % 60)}</span>
+              <span className="adm-time"><Icon name="clock" size="sm" />{ws.today} · {String(Math.floor(ws.clock / 60) % 24).padStart(2, '0')}:{two(ws.clock % 60)}</span>
             </div>
             <div className="adm-bar-r">
-              <div className="a-seg dashed" role="group" aria-label="View as (review control)">
-                <button className={role === 'owner' ? 'on' : ''} aria-pressed={role === 'owner'} onClick={() => setRole('owner')}>Owner/admin</button>
-                <button className={role === 'member' ? 'on' : ''} aria-pressed={role === 'member'} onClick={() => setRole('member')}>Member</button>
-              </div>
+              {canPreview ? (
+                <div className="a-seg dashed" role="group" aria-label={live ? 'Preview as' : 'View as (review control)'}>
+                  <button className={role === 'owner' ? 'on' : ''} aria-pressed={role === 'owner'} onClick={() => setRole('owner')}>Owner/admin</button>
+                  <button className={role === 'member' ? 'on' : ''} aria-pressed={role === 'member'} onClick={() => setRole('member')}>{live ? 'Preview as member' : 'Member'}</button>
+                </div>
+              ) : <span className="ap t-grey"><i />Member · view only</span>}
               <button className="a-circle" onClick={() => go('/app/needs-you')} aria-label={'Needs You, ' + c.needsOpen + ' open'}><Icon name="bell" size="sm" />{c.needsOpen > 0 && <b className="badge">{c.needsOpen}</b>}</button>
               {onToggleTheme && <ThemeToggle theme={theme} onToggle={onToggleTheme} className="a-theme" />}
             </div>
           </div>
 
           <main className="adm-content" id="main-content">
-            {view === 'home' && <CommandCentre ws={ws} role={role} go={go} openEnq={openEnq} ann={ann} />}
-            {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} />}
+            {view === 'home' && <CommandCentre ws={ws} role={role} me={meP} go={go} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} />}
+            {view === 'enquiries' && <Enquiries ws={ws} role={role} filter={filter} q={q} setFilter={(f) => go('/app/enquiries' + (f === 'all' ? '' : '?f=' + f))} openEnq={openEnq} ann={ann} live={live} onSetup={onSetup} />}
             {view === 'needs' && <NeedsYou ws={ws} role={role} save={save} saving={saving} openEnq={openEnq} ann={ann} />}
             {(view === 'number' || view === 'studio') && <NextReview which={view} go={go} role={role} />}
           </main>
         </div>
       </div>
 
-      {e && <Drawer key={e.id} ws={ws} e={e} role={role} setRole={setRole} dispatch={dispatch} saving={saving} save={save} sim={sim} onClose={closeEnq} go={go} ann={ann} />}
+      {e && <Drawer key={e.id} ws={ws} e={e} role={role} setRole={setRole} canPreview={canPreview} meId={me} apply={apply} saving={saving} save={save} sim={sim} onClose={closeEnq} go={go} ann={ann} live={live} />}
       {toast && <div className={'a-toast' + (toast.kind === 'bad' ? ' bad' : '')} role={toast.kind === 'bad' ? 'alert' : 'status'}><Icon name={toast.kind === 'bad' ? 'alert' : 'check'} size="sm" />{toast.t}</div>}
     </div>
   );

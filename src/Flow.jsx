@@ -7,7 +7,7 @@ import { PRESETS, TRIES, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sa
 import { Tag } from './components/Review.jsx';
 
 const VOICES = { warm: ['Warm', 'Friendly, British'], bright: ['Bright', 'Upbeat, quick'], calm: ['Calm', 'Low, unhurried'] };
-const KINDS = ['plumbing', 'dental', 'salon', 'restaurant'];
+const KINDS = ['restaurant', 'plumbing', 'dental', 'salon', 'general'];
 const ORDER = ['requesting', 'dialling', 'ringing', 'connected', 'completed'];
 
 function fill(kind, url, manual) {
@@ -21,6 +21,26 @@ function fill(kind, url, manual) {
     facts: p.facts.map((f) => ({ k: f[0], v: manual ? '' : f[1], check: manual ? false : f[2], ph: f[1] })),
     greeting: greetingFor(name || 'your business', 'Klaro'),
     greetingTouched: false
+  };
+}
+
+function blank(url) {
+  const name = nameFrom(url);
+  return { kind: '', bizName: name, bizDesc: '', services: [], facts: [], greeting: greetingFor(name || 'your business', 'Klaro'), greetingTouched: false, site: null, scanError: '' };
+}
+
+function fromSite(site) {
+  const kind = PRESETS[site.kind] ? site.kind : 'general';
+  const P = PRESETS[kind];
+  const svc = site.services && site.services.length >= 2 ? site.services.slice(0, 5) : P.services.slice(0, 3);
+  const miss = 'Not on your site. Add it, or Klaro takes a message';
+  const facts = [['Phone', site.phone], ['Address', site.address], ['Opening hours', site.hours], ['Email', site.email]]
+    .map(([k, v]) => ({ k, v: v || '', check: !v, ph: v ? '' : miss }));
+  const name = site.name || nameFrom(site.host || '');
+  return {
+    kind, bizName: name, bizDesc: site.description || '', services: svc, svcGuessed: !(site.services && site.services.length >= 2), facts,
+    greeting: greetingFor(name || 'your business', 'Klaro'), greetingTouched: false, site,
+    found: [site.found.name, site.found.description, site.found.phone, site.found.address, site.found.hours, site.found.email].filter(Boolean).length + (site.services ? site.services.length : 0)
   };
 }
 
@@ -45,7 +65,7 @@ export default class Flow extends Component {
         call: 'idle', seconds: 0, talk: 'speaking', summaryReady: false, scriptIdx: 0, previewDone: false,
         saveOpen: false, toast: '', protoOpen: false, simScan: 'success', simCall: 'answered', rm: false, playing: false
       },
-      fill(manual ? 'restaurant' : kindFrom(url), url, manual)
+      manual ? fill('restaurant', url, true) : init.state ? fill(kindFrom(url), url, false) : blank(url)
     );
   }
 
@@ -66,7 +86,7 @@ export default class Flow extends Component {
   }
   draft() {
     const s = this.state;
-    return { bizName: s.bizName || 'Canal Street Kitchen', klaroName: s.klaroName || 'Klaro', voice: s.voice, services: s.services, kind: s.kind || 'restaurant', url: s.url, greeting: s.greeting, testCall: s.call === 'completed' ? 'completed' : s.call === 'preview' ? 'preview' : 'none' };
+    return { bizName: s.bizName || 'Your business', klaroName: s.klaroName || 'Klaro', voice: s.voice, services: s.services, kind: s.kind || 'general', url: s.url, greeting: s.greeting, bizDesc: s.bizDesc, facts: (s.facts || []).filter((f) => (f.v || '').trim()).map((f) => ({ k: f.k, v: f.v })), testCall: s.call === 'completed' ? 'completed' : s.call === 'preview' ? 'preview' : 'none' };
   }
   sim(k, d) { return (this.props.sim && this.props.sim[k]) || d; }
   componentWillUnmount() { this.clearTimers(); stopSpeech(); clearTimeout(this.toastT); }
@@ -83,15 +103,30 @@ export default class Flow extends Component {
 
   runScan(from) {
     const fails = this.sim('scan', 'success') === 'fails';
+    const url = this.state.url;
+    const job = { done: false, site: null, error: '' };
+    const started = Date.now();
+    if (!fails) {
+      fetch('/api/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) })
+        .then((r) => r.json().then((j) => ({ ok: r.ok, j })).catch(() => ({ ok: false, j: {} })))
+        .then(({ ok, j }) => { if (ok && j.site) job.site = j.site; else job.error = j.message || 'The site couldn’t be opened.'; })
+        .catch(() => { job.error = 'We couldn’t reach the website reader. Check your connection and try again.'; })
+        .finally(() => { job.done = true; });
+    }
     let i = from || 0;
     const step = () => {
-      if (fails && i >= 1) { this.later(() => this.setState({ gen: 'failed' }), 1400); return; }
+      if (fails && i >= 1) { this.later(() => this.setState({ gen: 'failed', scanError: 'The page didn’t respond in time.' }), 1400); return; }
+      if (!fails && i >= 2 && !job.done) {
+        if (Date.now() - started > 25000) { this.setState({ gen: 'failed', scanError: 'The site took too long to respond.' }); return; }
+        this.later(step, 350); return;
+      }
+      if (job.done && job.error) { this.setState({ gen: 'failed', scanError: job.error }); return; }
       i += 1;
-      this.setState({ scanIdx: i });
-      if (i >= 5) { this.later(() => this.setState({ gen: 'review' }), 700); return; }
-      this.later(step, 850 + (i % 2) * 250);
+      this.setState({ scanIdx: i, site: job.site || this.state.site });
+      if (i >= 5) { this.later(() => this.setState({ ...fromSite(job.site), gen: 'review', scanIdx: 5 }), 600); return; }
+      this.later(step, 550 + (i % 2) * 200);
     };
-    this.later(step, 700);
+    this.later(step, 500);
   }
 
   runCall(from) {
@@ -175,7 +210,7 @@ export default class Flow extends Component {
     const s = this.state;
     if (!validUrl(s.url)) { this.toast('Check the address first, for example yourbusiness.co.uk'); return; }
     const url = cleanUrl(s.url);
-    this.reset({ ...fill(kindFrom(url), url, false), gen: 'scanning', scanIdx: 0, url }, () => this.runScan(0));
+    this.reset({ ...blank(url), gen: 'scanning', scanIdx: 0, url }, () => this.runScan(0));
   }
   startManual() { this.reset({ ...fill('restaurant', '', true), step: 'gen', gen: 'manual', url: '' }); }
   callMe() { this.clearTimers(); this.setState({ call: 'requesting', seconds: 0, summaryReady: false }, () => this.runCall('requesting')); }
@@ -211,10 +246,13 @@ export default class Flow extends Component {
     if (s.gen === 'manual' && !s.bizName) { genMood = 'thinking'; bubbleLabel = 'Tell me more'; bubbleText = 'What’s your business called, and what do people usually call about?'; }
     if (s.playing) genMood = 'speaking';
 
-    const scanDefs = [['Reading your homepage', '3 pages'], ['Finding your services', P.services.length + ' services'], ['Opening hours and area', 'Found'], ['Contact details', '1 email · 1 phone'], ['Writing ' + kname + '’s greeting', 'Ready']];
+    const st = s.site;
+    const scanDefs = [['Reading your homepage', st ? st.host : 'Opened'], ['Finding your services', st ? (st.services.length ? st.services.length + ' found' : 'Suggesting some') : 'Reading…'],
+      ['Opening hours and address', st ? ([st.hours && 'Hours', st.address && 'Address'].filter(Boolean).join(' · ') || 'Not listed') : 'Reading…'],
+      ['Contact details', st ? ([st.phone && 'Phone', st.email && 'Email'].filter(Boolean).join(' · ') || 'Not listed') : 'Reading…'], ['Writing ' + kname + '’s greeting', 'Ready']];
     const floats = [
-      ['Business name found', { top: '16%', left: '6%' }], [P.services.length + ' services detected', { top: '42%', right: '6%' }],
-      ['Opening hours checked', { top: '64%', left: '10%' }], ['Contact details found', { top: '82%', right: '10%' }]
+      [st && st.name ? st.name : 'Business name found', { top: '16%', left: '6%' }], [st && st.services.length ? st.services.length + ' services found' : 'Services suggested', { top: '42%', right: '6%' }],
+      [st && st.hours ? 'Opening hours found' : 'Opening hours checked', { top: '64%', left: '10%' }], [st && st.phone ? 'Phone number found' : 'Contact details checked', { top: '82%', right: '10%' }]
     ].slice(0, Math.min(s.scanIdx, 4));
 
     /* call */
@@ -303,7 +341,6 @@ export default class Flow extends Component {
                   })}
                 </div>
                 <div className="kc-progress" aria-hidden="true"><i style={{ width: Math.round((s.scanIdx / 5) * 100) + '%' }} /></div>
-                <div className="sim-note" role="note"><Icon name="info" size="sm" /><span><b>Simulated scan.</b> This preview fills in sample details for a restaurant. A live build reads your real website.</span><Tag kind="demo" show={this.props.ann} /></div>
                 <div className="kc-meta"><span>Usually under a minute. You can edit everything next.</span><button className="link" onClick={() => this.startManual()}>Enter details myself</button></div>
               </>)}
 
@@ -313,7 +350,7 @@ export default class Flow extends Component {
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>We couldn't read {siteLabel}</h1>
                   <p className="kc-sub">Nothing is wrong with your business. Some sites block automatic reading, are still loading, or the address has a typo.</p>
                 </div>
-                <div className="kc-banner banner-err" role="alert"><span className="ico"><Icon name="alert" size="sm" /></span><div><b>The page didn't respond in time.</b> We tried for 20 seconds. No details were saved.</div></div>
+                <div className="kc-banner banner-err" role="alert"><span className="ico"><Icon name="alert" size="sm" /></span><div><b>{s.scanError || 'The page didn’t respond in time.'}</b> No details were saved.</div></div>
                 <div className="kc-field">
                   <label className="kc-label" htmlFor="kc-url-retry">Check the address</label>
                   <input className="kc-input" id="kc-url-retry" type="text" inputMode="url" value={s.url} onChange={(e) => this.setState({ url: e.target.value })} onKeyDown={(e) => { if (e.key === 'Enter') this.retryScan(); }} />
@@ -333,7 +370,7 @@ export default class Flow extends Component {
                   <p className="kc-sub">{s.gen === 'manual' ? 'Just the basics: a name, what you do and what people call about. You can add more later.' : 'Check the details callers will hear. Change only what matters. Everything else can wait.'}</p>
                 </div>
                 {s.gen === 'review' && (
-                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div><Tag kind="demo" show={this.props.ann} label="Sample details" /><b>Found {2 + s.services.length + s.facts.length} details on your site.</b> Items marked <b>Check</b> are guesses. Confirm them before callers hear them.</div></div>
+                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div>{!s.site && <Tag kind="demo" show={this.props.ann} label="Sample details" />}<b>{s.site ? 'Found ' + s.found + ' details on ' + s.site.host + '.' : 'Sample details filled in.'}</b> Items marked <b>Check</b> are missing{s.svcGuessed ? ', and the services are suggestions' : ''}. Fix them before callers hear them.</div></div>
                 )}
                 <div className="kc-form">
                   <div className="kc-field">

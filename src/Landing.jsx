@@ -71,7 +71,7 @@ function UrlForm({ onStart, id }) {
 }
 
 /* ---------- nav ---------- */
-function Nav({ onStart, theme, onToggleTheme }) {
+function Nav({ onStart, theme, onToggleTheme, signedIn, onOpenApp }) {
   const [open, setOpen] = useState(false);
   const links = [['#platform', 'Platform'], ['#how', 'How it works'], ['#callers', 'Callers'], ['#pricing', 'Pricing'], ['#faq', 'FAQ']];
   return (
@@ -84,14 +84,18 @@ function Nav({ onStart, theme, onToggleTheme }) {
         <div className="nv-right">
           <ThemeToggle theme={theme} onToggle={onToggleTheme} />
           <a className="btn btn-sm nv-ghost" href="#listen">Hear a call</a>
-          <button className="btn btn-primary btn-sm nv-cta" onClick={focusHero}>Get my receptionist</button>
+          {signedIn
+            ? <button className="btn btn-primary btn-sm nv-cta" onClick={onOpenApp}>Open my workspace</button>
+            : <button className="btn btn-primary btn-sm nv-cta" onClick={focusHero}>Get my receptionist</button>}
           <button className="nv-burger" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}><span /><span /></button>
         </div>
       </div>
       {open && (
         <div className="nv-menu">
           {links.map((l) => <a key={l[0]} href={l[0]} onClick={() => setOpen(false)}>{l[1]}</a>)}
-          <button className="btn btn-primary btn-block" onClick={() => { setOpen(false); focusHero(); }}>Get my receptionist<Arr /></button>
+          {signedIn
+            ? <button className="btn btn-primary btn-block" onClick={() => { setOpen(false); onOpenApp(); }}>Open my workspace<Arr /></button>
+            : <button className="btn btn-primary btn-block" onClick={() => { setOpen(false); focusHero(); }}>Get my receptionist<Arr /></button>}
           <button className="btn btn-ghost-dark btn-block" onClick={() => { setOpen(false); onStart('', true); }}>No website? Start here</button>
         </div>
       )}
@@ -747,11 +751,11 @@ function Footer() {
   );
 }
 
-export default function Landing({ onStart, theme, onToggleTheme }) {
+export default function Landing({ onStart, theme, onToggleTheme, signedIn, onOpenApp }) {
   return (
     <div className="kc lp">
       <a className="lp-skip" href="#main">Skip to content</a>
-      <Nav onStart={onStart} theme={theme} onToggleTheme={onToggleTheme} />
+      <Nav onStart={onStart} theme={theme} onToggleTheme={onToggleTheme} signedIn={signedIn} onOpenApp={onOpenApp} />
       <main id="main">
         <Hero onStart={onStart} />
         <BuiltFor />

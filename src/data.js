@@ -59,6 +59,24 @@ export const PRESETS = {
       follow: 'Confirm Saturday 10:00 and send the £20 deposit link.'
     }
   },
+  general: {
+    label: 'Something else',
+    desc: '',
+    services: ['General enquiries', 'Appointments', 'Prices and quotes'],
+    facts: [
+      ['Opening hours', 'Mon–Fri 09:00–17:30', true],
+      ['Address', 'Your address', true],
+      ['Phone', 'Your main number', true]
+    ],
+    sum: {
+      customer: 'Jordan Lee',
+      enquiry: 'Wants to book an appointment',
+      details: ['New customer', 'Prefers mornings', 'Callback +44 7700 900 345'],
+      action: 'Passed to the team. Nothing was booked on the call.',
+      outcome: 'Awaiting confirmation. Jordan was told the team will call back.',
+      follow: 'Call Jordan to confirm a time.'
+    }
+  },
   restaurant: {
     label: 'Food & hospitality',
     desc: 'Neighbourhood restaurant on Canal Street serving seasonal plates, with group tables and private dining.',
@@ -137,6 +155,7 @@ export const TRIES = {
   restaurant: ['"Table for 8 on Friday at 7?"', '"Do you have vegan options?"', '"Can we bring a birthday cake?"'],
   plumbing: ['"Can someone come Thursday morning?"', '"How much is a call-out?"', '"It\u2019s urgent, there\u2019s water everywhere."'],
   dental: ['"Can I book a check-up?"', '"Are you taking new patients?"', '"I\u2019ve chipped a tooth."'],
+  general: ['"Can I book an appointment?"', '"How much does it cost?"', '"What time are you open?"'],
   salon: ['"Can I book braids for Saturday?"', '"Do you need a deposit?"', '"How long does colour take?"']
 };
 
