@@ -239,7 +239,7 @@ export default function Verify({ draft, onHome, onBack, onDone, onPreviewDone, t
               {d.url && <div><dt>Website</dt><dd>{d.url}</dd></div>}
               <div><dt>Services</dt><dd>{(d.services || []).join(', ') || 'None added yet'}</dd></div>
               <div><dt>Voice</dt><dd>{d.voice === 'bright' ? 'Bright' : d.voice === 'calm' ? 'Calm' : 'Warm'}</dd></div>
-              <div><dt>Test call</dt><dd>{d.testCall === 'completed' ? 'Demo summary attached · not counted as a real call' : d.testCall === 'preview' ? 'Browser preview only' : 'Not tried yet'}</dd></div>
+              <div><dt>Test call</dt><dd>{d.testCall === 'completed' ? 'Demo summary attached · not counted as a real call' : d.testCall === 'preview' ? 'Example call played in your browser' : 'Skipped'}</dd></div>
               <div><dt>Status</dt><dd>Not live · no number yet</dd></div>
             </dl>
             <Tag kind="pending" show={ann} label="Draft preserved through verification" />

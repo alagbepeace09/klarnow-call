@@ -24,7 +24,7 @@ function readRoute() {
   if (path.startsWith('/start')) {
     const site = p.get('site') || '';
     const state = p.get('state') || '';
-    return { view: 'flow', init: { url: site || (state ? 'canalstreetkitchen.co.uk' : ''), manual: !site && !state, state }, key };
+    return { view: 'flow', init: { url: site || (state && state !== 'restore' ? 'canalstreetkitchen.co.uk' : ''), manual: !site && !state, state }, key };
   }
   if (path === '/save') return { view: 'save', key };
   if (path.startsWith('/app')) {
@@ -126,9 +126,9 @@ export default function App() {
 
   let page;
   if (route.view === 'flow') {
-    page = <Flow key={route.key} init={route.init} onHome={home} onSave={onSave} sim={sim} onScreen={(s) => setFlowScreen(s)} {...common} />;
+    page = <Flow key={route.key} init={route.init} draft={draft} onHome={home} onSave={onSave} sim={sim} review={review} onScreen={(s) => setFlowScreen(s)} {...common} />;
   } else if (route.view === 'save') {
-    page = <Verify key={route.key} draft={draft} onHome={home} onBack={() => go(draft && draft.url ? '/start?state=' + (draft.testCall === 'completed' ? 'summary' : 'review') : '/start', { fresh: true })} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
+    page = <Verify key={route.key} draft={draft} onHome={home} onBack={() => go(draft ? '/start?state=restore' : '/start', { fresh: true })} onDone={onVerified} onPreviewDone={onPreviewDone} {...common} />;
   } else if (route.view === 'app') {
     if (!checked) page = <div className="kc adm" aria-busy="true" />;
     else if (session) {

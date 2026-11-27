@@ -159,7 +159,7 @@ function CommandCentre({ ws, role, me, go, openEnq, ann, live, onSetup }) {
           <div className="a-sep" />
           <div className="a-demo">
             <span className="a-demo-ic"><Icon name="play" size="sm" /></span>
-            <div><b>Your test call</b><span>{ws.demoCall === 'completed' ? 'Kept for reference. Not a real enquiry and not counted.' : ws.demoCall === 'preview' ? 'Browser preview only. No call was made.' : 'Not tried yet.'}</span></div>
+            <div><b>{ws.demoCall === 'completed' ? 'Your test call' : 'Your example call'}</b><span>{ws.demoCall === 'completed' ? 'Kept for reference. Not a real enquiry and not counted.' : ws.demoCall === 'preview' ? 'You heard an example call during setup. No call was made.' : 'Skipped during setup.'}</span></div>
             <span className="ap t-violet"><i />Demo</span>
           </div>
         </section>

@@ -128,27 +128,48 @@ export function greetingFor(name, kname) {
   return 'Hi, thanks for calling ' + (name || 'us') + '. This is ' + (kname || 'Klaro') + ', the virtual receptionist. I can answer questions and take your details for the team. How can I help?';
 }
 
-export function sampleScript(bizName, klaroName, greeting, kind) {
+// Example call used in setup. Built from the visitor's own business details.
+export function sampleScript(bizName, klaroName, greeting, kind, services, facts) {
   const n = bizName || 'your business';
-  const k = kind || 'restaurant';
-  if (k === 'restaurant') {
+  const k = kind || 'general';
+  const kn = klaroName || 'Klaro';
+  const fact = (key) => { const f = (facts || []).find((x) => x && x.k === key && (x.v || '').trim()); return f ? f.v.trim() : ''; };
+  const hours = fact('Opening hours');
+  const svc = (services || []).find(Boolean);
+  if (k === 'restaurant' && !svc) {
     return [
-      { who: 'k', text: greeting || greetingFor(n, klaroName) },
+      { who: 'k', text: greeting || greetingFor(n, kn) },
       { who: 'c', text: 'Hi, I’d like a table for eight this Friday at 7pm, please.' },
-      { who: 'k', text: 'Groups of eight are confirmed by our reservations team. Can I take your name and a number to call you back?' },
+      { who: 'k', text: 'Groups of eight are confirmed by our team. Can I take your name and a number to call you back?' },
       { who: 'c', text: 'Alex Morgan. It’s 07700 900318.' },
-      { who: 'k', text: 'Thanks Alex. I’ll pass that to the reservations team. They’ll confirm availability with you.' }
+      { who: 'k', text: 'Thanks Alex. I’ll pass that to the team at ' + n + '. They’ll confirm availability with you.' }
     ];
   }
-  const s = PRESETS[k].sum;
-  const first = s.customer.split(' ')[0];
+  const caller = k === 'restaurant' ? 'Alex' : k === 'plumbing' ? 'Sam' : k === 'dental' ? 'Hannah' : k === 'salon' ? 'Zainab' : 'Jordan';
+  const topic = svc ? svc.charAt(0).toLowerCase() + svc.slice(1) : 'booking an appointment';
   return [
-    { who: 'k', text: greeting || greetingFor(n, klaroName) },
-    { who: 'c', text: 'Hi, ' + s.enquiry.charAt(0).toLowerCase() + s.enquiry.slice(1) + '.' },
-    { who: 'k', text: 'I can help with that. Can I take your name and the best number to reach you?' },
-    { who: 'c', text: first + '. This number is fine.' },
-    { who: 'k', text: 'Thanks ' + first + '. ' + s.action + ' I’ll pass this to the team at ' + n + ' to confirm, and they’ll text you.' }
+    { who: 'k', text: greeting || greetingFor(n, kn) },
+    { who: 'c', text: 'Hi, I’m calling about ' + topic + '. Can someone help me this week?' },
+    { who: 'k', text: (hours ? 'Of course. We’re open ' + hours + '. ' : 'Of course. ') + 'I can’t confirm a time myself, but I’ll pass this straight to the team. Can I take your name and the best number to reach you?' },
+    { who: 'c', text: 'It’s ' + caller + ', on 07700 900345.' },
+    { who: 'k', text: 'Thanks ' + caller + '. I’ve passed that to the team at ' + n + '. They’ll call you back to confirm.' }
   ];
+}
+
+/** The summary Klaro would write for the example call above. */
+export function sampleSummary(bizName, kind, services) {
+  const svc = (services || []).find(Boolean);
+  if (kind === 'restaurant' && !svc) return { ...PRESETS.restaurant.sum, customer: 'Alex Morgan (example caller)' };
+  const caller = kind === 'restaurant' ? 'Alex' : kind === 'plumbing' ? 'Sam' : kind === 'dental' ? 'Hannah' : kind === 'salon' ? 'Zainab' : 'Jordan';
+  const topic = svc || 'Booking an appointment';
+  return {
+    customer: caller + ' (example caller)',
+    enquiry: 'Asked about ' + topic.charAt(0).toLowerCase() + topic.slice(1),
+    details: ['Wants help this week', 'Callback 07700 900345'],
+    action: 'Passed to the team at ' + (bizName || 'your business') + '. Nothing was booked on the call.',
+    outcome: caller + ' was told the team will call back to confirm.',
+    follow: 'Call ' + caller + ' back to confirm a time.'
+  };
 }
 
 export const TRIES = {

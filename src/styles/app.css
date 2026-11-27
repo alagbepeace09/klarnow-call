@@ -504,3 +504,9 @@
 @container kc (max-width: 560px) { .kc-callstage.tall { min-height: 360px; } }
 
 .kc-avatar .klaro { margin-top: 6px; }
+
+/* honest step 03: example call in the browser */
+.kc-example { display: grid; gap: 10px; padding: 16px 18px; border-radius: 18px; background: var(--bg-2); border: 1px solid var(--line-3); }
+.kc-example-row { display: flex; gap: 10px; align-items: center; font-size: 15px; color: var(--ink-2); }
+.kc-example-row .ic { color: var(--lime-ink); flex: none; }
+.kc-example-row b { color: var(--ink); font-weight: 600; }

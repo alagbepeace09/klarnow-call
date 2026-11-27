@@ -3,7 +3,7 @@ import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
 import Ally from './components/Ally.jsx';
 import { Brand, ThemeToggle } from './components/Brand.jsx';
-import { PRESETS, TRIES, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
+import { PRESETS, TRIES, sampleSummary, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
 import { Tag } from './components/Review.jsx';
 
 const VOICES = { warm: ['Warm', 'Friendly, British'], bright: ['Bright', 'Upbeat, quick'], calm: ['Calm', 'Low, unhurried'] };
@@ -33,7 +33,7 @@ function fromSite(site) {
   const kind = PRESETS[site.kind] ? site.kind : 'general';
   const P = PRESETS[kind];
   const svc = site.services && site.services.length >= 2 ? site.services.slice(0, 5) : P.services.slice(0, 3);
-  const miss = 'Not on your site. Add it, or Klaro takes a message';
+  const miss = 'Not on your site. Add it, or leave blank';
   const facts = [['Phone', site.phone], ['Address', site.address], ['Opening hours', site.hours], ['Email', site.email]]
     .map(([k, v]) => ({ k, v: v || '', check: !v, ph: v ? '' : miss }));
   const name = site.name || nameFrom(site.host || '');
@@ -67,12 +67,23 @@ export default class Flow extends Component {
       },
       manual ? fill('restaurant', url, true) : init.state ? fill(kindFrom(url), url, false) : blank(url)
     );
+    const d = props.draft;
+    if (init.state === 'restore' && d) {
+      const have = (d.facts || []).map((f) => f.k);
+      const facts = (d.facts || []).map((f) => ({ k: f.k, v: f.v, check: false, ph: '' }))
+        .concat(['Phone', 'Address', 'Opening hours', 'Email'].filter((k) => have.indexOf(k) < 0).map((k) => ({ k, v: '', check: true, ph: 'Not on your site. Add it, or leave blank' })));
+      Object.assign(this.state, {
+        step: 'gen', gen: d.url ? 'review' : 'manual', scanIdx: 5, url: d.url || '', kind: d.kind || 'general', bizName: d.bizName || '', bizDesc: d.bizDesc || '',
+        services: (d.services || []).slice(), facts, klaroName: d.klaroName || 'Klaro', voice: d.voice || 'warm', greeting: d.greeting || greetingFor(d.bizName, d.klaroName),
+        greetingTouched: !!d.greeting, site: d.url ? { host: d.url, name: d.bizName, services: d.services || [], found: {} } : null, svcGuessed: false
+      });
+    }
   }
 
   componentDidMount() {
     window.scrollTo(0, 0);
     const st = this.props.init && this.props.init.state;
-    if (st) this.jump(st);
+    if (st && st !== 'restore') this.jump(st);
     else if (this.state.gen === 'scanning') this.runScan(0);
     this.report();
   }
@@ -158,7 +169,7 @@ export default class Flow extends Component {
     this.later(() => this.setState({ summaryReady: true }), 2400);
   }
 
-  script() { const s = this.state; return sampleScript(s.bizName, s.klaroName, s.greeting, s.kind); }
+  script() { const s = this.state; return sampleScript(s.bizName, s.klaroName, s.greeting, s.kind, s.services, s.facts); }
 
   runPreview(from) {
     const lines = this.script();
@@ -276,7 +287,7 @@ export default class Flow extends Component {
     const mm = Math.floor(s.seconds / 60), ss = s.seconds % 60;
     const timer = String(mm).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
 
-    let callMood = 'welcome', stagePill = 'Demo · not live', stagePillCls = '', stageBig = 'Ready when you are', stageSmall = kname + ' will ring your phone and answer as ' + bizNameOr + '.';
+    let callMood = 'welcome', stagePill = 'Demo · not live', stagePillCls = '', stageBig = 'Ready when you are', stageSmall = this.props.review ? kname + ' will ring your phone and answer as ' + bizNameOr + '.' : 'Press play to hear ' + kname + ' answer as ' + bizNameOr + '.';
     let showRings = false, showTimer = false, showWave = false, waveCls = '', liveTitle = '', liveSub = '';
     if (c === 'requesting') { callMood = 'thinking'; stageBig = 'Requesting your call…'; stageSmall = 'Nothing has rung yet.'; liveTitle = 'Requesting your call'; liveSub = 'This takes a few seconds. Your phone hasn’t rung yet.'; }
     if (c === 'dialling') { callMood = 'working'; stageBig = 'Dialling…'; stageSmall = 'Calling ' + ccPhone + '. It hasn’t connected yet.'; liveTitle = 'Dialling your number'; liveSub = 'Your phone should ring in a moment.'; }
@@ -290,8 +301,8 @@ export default class Flow extends Component {
       const last = shown[shown.length - 1];
       const callerTalking = last && last.who === 'c';
       callMood = s.previewDone ? 'success' : callerTalking ? 'listening' : 'speaking';
-      stagePill = 'Browser preview · not a call'; showWave = !s.previewDone; waveCls = callerTalking ? 'listen' : '';
-      stageBig = s.previewDone ? 'Preview finished' : callerTalking ? 'Sample caller speaking' : kname + ' is speaking';
+      stagePill = 'Example call · in your browser'; showWave = !s.previewDone; waveCls = callerTalking ? 'listen' : '';
+      stageBig = s.previewDone ? 'Example finished' : callerTalking ? 'Example caller speaking' : kname + ' is speaking';
       stageSmall = 'Played in your browser. No phone call was made.';
     }
     const problem = c === 'failed' || c === 'unanswered';
@@ -370,7 +381,7 @@ export default class Flow extends Component {
                   <p className="kc-sub">{s.gen === 'manual' ? 'Just the basics: a name, what you do and what people call about. You can add more later.' : 'Check the details callers will hear. Change only what matters. Everything else can wait.'}</p>
                 </div>
                 {s.gen === 'review' && (
-                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div>{!s.site && <Tag kind="demo" show={this.props.ann} label="Sample details" />}<b>{s.site ? 'Found ' + s.found + ' details on ' + s.site.host + '.' : 'Sample details filled in.'}</b> Items marked <b>Check</b> are missing{s.svcGuessed ? ', and the services are suggestions' : ''}. Fix them before callers hear them.</div></div>
+                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div>{!s.site && <Tag kind="demo" show={this.props.ann} label="Sample details" />}<b>{s.site ? 'We read ' + s.site.host + '.' : 'Sample details filled in.'}</b> {s.site ? (s.facts.filter((f) => f.check).length ? 'Fill in anything marked Check' : 'Everything below came from your site') + (s.svcGuessed ? ', and swap the suggested services for your own' : '') + '. Klaro only says what’s listed here.' : 'Items marked Check are guesses.'}</div></div>
                 )}
                 <div className="kc-form">
                   <div className="kc-field">
@@ -410,7 +421,7 @@ export default class Flow extends Component {
                       {s.facts.map((f, i) => (
                         <div className="kc-fact" key={f.k}>
                           <label className="k" htmlFor={'fact-' + i}>{f.k}</label>
-                          <input id={'fact-' + i} type="text" value={f.v} placeholder={'e.g. ' + f.ph} onChange={(e) => this.setFact(i, e.target.value)} />
+                          <input id={'fact-' + i} type="text" value={f.v} placeholder={/^Not on/.test(f.ph || '') ? f.ph : 'e.g. ' + f.ph} onChange={(e) => this.setFact(i, e.target.value)} />
                           {f.check ? <span className="kc-src check">Check</span> : <span />}
                         </div>
                       ))}
@@ -453,7 +464,7 @@ export default class Flow extends Component {
 
                 <div className="kc-cta-bar">
                   <button className="btn btn-primary btn-lg" disabled={cannotHear} onClick={() => this.reset({ step: 'call', call: 'idle' })}>Let me hear {kname}<span className="arr"><Icon name="arrow" /></span></button>
-                  <span className="note"><Icon name="phone" size="sm" /><span>{cannotHear ? 'Add a business name and at least one service' : 'Next: ' + kname + ' rings your phone'}</span></span>
+                  <span className="note"><Icon name={this.props.review ? 'phone' : 'speaker'} size="sm" /><span>{cannotHear ? 'Add a business name and at least one service' : this.props.review ? 'Next: ' + kname + ' rings your phone' : 'Next: hear an example call'}</span></span>
                 </div>
               </>)}
             </div>
@@ -501,9 +512,27 @@ export default class Flow extends Component {
           <main className="kc-app">
             <div className="kc-panel">
               <div><button className="back" onClick={() => this.reset({ step: 'gen', gen: s.gen === 'manual' ? 'manual' : 'review', call: 'idle' })}><Icon name="back" size="sm" /><span>Edit {kname}</span></button></div>
-              <div className="sim-note" role="note"><Icon name="info" size="sm" /><span><b>Simulated in this preview.</b> No number is dialled, nothing is recorded and no one is charged. A live build shows these states only when the phone network reports them.</span><Tag kind="demo" show={this.props.ann} /></div>
+              {this.props.review && <div className="sim-note" role="note"><Icon name="info" size="sm" /><span><b>Simulated in this preview.</b> No number is dialled, nothing is recorded and no one is charged. A live build shows these states only when the phone network reports them.</span><Tag kind="demo" show={this.props.ann} /></div>}
 
-              {c === 'idle' && (<>
+              {c === 'idle' && !this.props.review && (<>
+                <div>
+                  <span className="kc-kicker">Step 3 of 6 · Hear {kname}</span>
+                  <h1 className="kc-h2" style={{ marginTop: 10 }}>Hear {kname} answer as {bizNameOr}.</h1>
+                  <p className="kc-sub">{kname} plays a short example call in your browser, using the details you just checked. Turn your sound on.</p>
+                </div>
+                <div className="kc-example">
+                  <div className="kc-example-row"><Icon name="check" size="sm" /><span>Greets callers as <b>{bizNameOr}</b></span></div>
+                  <div className="kc-example-row"><Icon name="check" size="sm" /><span>Answers from your facts{s.services.length ? <>, like <b>{s.services[0]}</b></> : ''}</span></div>
+                  <div className="kc-example-row"><Icon name="check" size="sm" /><span>Takes the caller’s details and writes you a summary</span></div>
+                </div>
+                <div className="kc-cta-bar">
+                  <button className="btn btn-primary btn-lg" onClick={() => this.startPreview()}><Icon name="play" size="sm" />Play the example call</button>
+                  <button className="btn btn-ghost btn-lg" onClick={() => { stopSpeech(); this.clearTimers(); this.props.onSave && this.props.onSave(this.draft()); }}>Skip and save</button>
+                </div>
+                <div className="kc-banner banner-info"><span className="ico"><Icon name="phone" size="sm" /></span><div><b>Want {kname} to ring your phone?</b> Phone test calls switch on once a number is connected to your workspace. Nothing here dials anyone.</div></div>
+              </>)}
+
+              {c === 'idle' && this.props.review && (<>
                 <div>
                   <span className="kc-kicker">Demo call</span>
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>Hear {kname} answer as {bizNameOr}.</h1>
@@ -587,17 +616,19 @@ export default class Flow extends Component {
 
               {c === 'preview' && (<>
                 <div>
-                  <span className="kc-kicker">Browser preview · this is not a phone call</span>
+                  <span className="kc-kicker">Example call · played in your browser, nothing is dialled</span>
                   <h1 className="kc-h2" style={{ marginTop: 10 }}>{s.previewDone ? 'That’s ' + kname + ' on a typical call.' : 'Listen to ' + kname + ' handle a call'}</h1>
-                  <p className="kc-sub">A sample conversation in {kname}'s voice, using your details. For the real thing, ask {kname} to ring you.</p>
+                  <p className="kc-sub">{s.previewDone ? 'Here’s the summary ' + kname + ' would send you. Every real call ends with one of these.' : 'An example caller, answered in ' + kname + '’s voice using your details.'}</p>
                 </div>
                 <div className="kc-script" aria-live="polite">
-                  {shown.map((l, i) => (<div key={i} className={'kc-line ' + l.who}><small>{l.who === 'k' ? kname : 'Caller (sample)'}</small>{l.text}</div>))}
+                  {shown.map((l, i) => (<div key={i} className={'kc-line ' + l.who}><small>{l.who === 'k' ? kname : 'Example caller'}</small>{l.text}</div>))}
                 </div>
+                {s.previewDone && <SummaryCard sum={sampleSummary(s.bizName, s.kind, s.services)} phone="07700 900345" kname={kname} />}
                 <div className="kc-cta-bar">
                   {s.previewDone && <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.clearTimers(); this.props.onSave && this.props.onSave(this.draft()); }}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>}
                   {!s.previewDone && <button className="btn btn-ghost btn-lg" onClick={() => { this.clearTimers(); stopSpeech(); this.setState({ previewDone: true, scriptIdx: this.script().length }); }}>Stop preview</button>}
-                  <button className="btn btn-ghost btn-lg" onClick={() => this.editNumber()}>Call my phone instead</button>
+                  {s.previewDone && <button className="btn btn-ghost btn-lg" onClick={() => this.startPreview()}>Play again</button>}
+                  {this.props.review && <button className="btn btn-ghost btn-lg" onClick={() => this.editNumber()}>Call my phone instead</button>}
                 </div>
               </>)}
             </div>

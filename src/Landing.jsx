@@ -134,7 +134,7 @@ function Hero({ onStart }) {
       </div>
       <a className="hx-ticker" href="#how" aria-label="How it works">
         <span className="tag"><BrandMark className="tk-mark" />How it works</span>
-        <span className="tk-track"><span className="tk-row">Paste your website · Klaro learns your business · It rings your phone to show you · You go live on your number · Paste your website · Klaro learns your business · It rings your phone to show you · You go live on your number ·</span></span>
+        <span className="tk-track"><span className="tk-row">Paste your website · Klaro learns your business · Hear an example call · Save it with your work email · Go live on your number · Paste your website · Klaro learns your business · Hear an example call · Save it with your work email · Go live on your number ·</span></span>
         <span className="go"><Icon name="arrow" size="sm" /></span>
       </a>
     </section>
@@ -306,11 +306,11 @@ function HowItWorks({ onStart }) {
           </Reveal>
           <Reveal className="lp-step" delay={100}>
             <span className="mono-n">02</span>
-            <h3>Hear it call you</h3>
-            <p>Klaro rings your phone and answers as your business. Play a customer, ask awkward questions and see the summary it writes.</p>
+            <h3>Hear it answer as you</h3>
+            <p>Klaro plays an example call in your browser, in your business’s name, using the details it just read. Then you see the summary it writes.</p>
             <div className="lp-mock lp-mock-call">
               <div className="lp-mock-klaro"><Klaro mood="speaking" size={110} decorative /></div>
-              <div className="lp-mock-callinfo"><span className="kc-dark-pill live"><span className="dot" />Live demo call</span><span className="mono lp-mock-timer">00:42</span><span className="lp-mock-sub">Klaro is speaking</span></div>
+              <div className="lp-mock-callinfo"><span className="kc-dark-pill live"><span className="dot" />Example call · in your browser</span><span className="mono lp-mock-timer">00:42</span><span className="lp-mock-sub">Klaro is speaking</span></div>
             </div>
           </Reveal>
           <Reveal className="lp-step" delay={200}>
@@ -618,7 +618,7 @@ function Control() {
   const items = [
     ['eye', 'You approve every fact', 'Klaro only shares what’s on your list. Guesses from your website are marked Check until you confirm them.', ['Approved facts', 'Check flags']],
     ['shield', 'It says it’s virtual', 'Callers always know they’re speaking to a virtual receptionist. That line can’t be removed.', ['Disclosure', 'Honest status']],
-    ['hand', 'Live only when you say', 'Preview and demo calls never touch your real number. Going live is a separate step with a test call.', ['Test call', 'Hand over any time']]
+    ['hand', 'Live only when you say', 'Example calls during setup never touch your real number. Going live is a separate step with a test call.', ['Test call', 'Hand over any time']]
   ];
   return (
     <section className="lp-pad" id="control">
@@ -654,7 +654,7 @@ function Plans({ onStart }) {
             <span className="kc-pill pill-live" style={{ alignSelf: 'flex-start' }}><span className="dot" />Available now</span>
             <h3>Preview</h3>
             <div className="lp-price">Free</div>
-            <ul><li><span>+</span>Build Klaro from your website</li><li><span>+</span>Edit facts, voice and greeting</li><li><span>+</span>Demo call to your phone</li><li><span>+</span>Sample call summary</li></ul>
+            <ul><li><span>+</span>Build Klaro from your website</li><li><span>+</span>Edit facts, voice and greeting</li><li><span>+</span>Example call in your browser</li><li><span>+</span>Your own workspace and team</li></ul>
             <button className="btn btn-ghost btn-block" onClick={focusHero}>Try it now</button>
           </Reveal>
           <Reveal className="lp-plan featured" delay={80}>
@@ -684,8 +684,8 @@ function Faq() {
     ['What if Klaro doesn’t know the answer?', 'It says so, takes the caller’s details and passes the question to you. It only shares facts you’ve approved, so it won’t make things up about prices or availability.'],
     ['Can I keep my existing phone number?', 'Yes. Forward your current number to Klaro all the time, only when you don’t answer, or only outside your hours. Or get a new number instead.'],
     ['Does Klaro book appointments directly?', 'Klaro takes the next step you allow: requesting a booking, sending a link or flagging it to you. Every action is marked as done, pending or failed, so you always know what actually happened.'],
-    ['Is the demo call a real call?', 'Yes. Klaro rings the number you give and you can talk to it. The screen shows the real call status (dialling, ringing, connected) and never pretends a call happened if it didn’t.'],
-    ['What happens to my data and recordings?', 'Your preview details are only used to build your Klaro. Demo calls are recorded to create your summary, and you’re asked before the call. The privacy notice explains how long data is kept and how to delete it.'],
+    ['Is the example call a real phone call?', 'No. During setup, Klaro plays an example call in your browser so you can hear how it answers as your business. Nothing is dialled. Real calls start once your number is connected, and the dashboard only shows a call as answered when it actually happened.'],
+    ['What happens to my data?', 'Klaro only reads the public pages of the website you give it, and only uses what it finds to set up your receptionist. Your email is used to sign you in with a one-time code. Once you’re live, call recordings and summaries follow the privacy notice, which explains how long data is kept and how to delete it.'],
     ['How long does setup take?', 'The aim is to get you from your website to a personalised preview in a couple of minutes. Going live depends on whether you forward an existing number or take a new one.'],
     ['I don’t have a website. Can I still use it?', 'Yes. Choose “Describe your business instead” and tell Klaro the basics: your name, what you do and the services people call about.']
   ];
