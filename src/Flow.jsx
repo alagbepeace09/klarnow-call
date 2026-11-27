@@ -3,7 +3,8 @@ import Klaro from './components/Klaro.jsx';
 import Icon, { LogoMark } from './components/Icons.jsx';
 import Ally from './components/Ally.jsx';
 import { Brand, ThemeToggle } from './components/Brand.jsx';
-import { PRESETS, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
+import { PRESETS, TRIES, kindFrom, cleanUrl, validUrl, nameFrom, greetingFor, sampleScript, speak, stopSpeech } from './data.js';
+import { Tag } from './components/Review.jsx';
 
 const VOICES = { warm: ['Warm', 'Friendly, British'], bright: ['Bright', 'Upbeat, quick'], calm: ['Calm', 'Low, unhurried'] };
 const KINDS = ['plumbing', 'dental', 'salon', 'restaurant'];
@@ -44,14 +45,30 @@ export default class Flow extends Component {
         call: 'idle', seconds: 0, talk: 'speaking', summaryReady: false, scriptIdx: 0, previewDone: false,
         saveOpen: false, toast: '', protoOpen: false, simScan: 'success', simCall: 'answered', rm: false, playing: false
       },
-      fill(manual ? 'plumbing' : kindFrom(url), url, manual)
+      fill(manual ? 'restaurant' : kindFrom(url), url, manual)
     );
   }
 
   componentDidMount() {
     window.scrollTo(0, 0);
-    if (this.state.gen === 'scanning') this.runScan(0);
+    const st = this.props.init && this.props.init.state;
+    if (st) this.jump(st);
+    else if (this.state.gen === 'scanning') this.runScan(0);
+    this.report();
   }
+  componentDidUpdate(pp, ps) {
+    if (ps.step !== this.state.step || ps.gen !== this.state.gen || ps.call !== this.state.call) this.report();
+  }
+  report() {
+    if (!this.props.onScreen) return;
+    const s = this.state;
+    this.props.onScreen(s.step === 'gen' ? '02' : '03', s.step === 'gen' ? s.gen : s.call);
+  }
+  draft() {
+    const s = this.state;
+    return { bizName: s.bizName || 'Canal Street Kitchen', klaroName: s.klaroName || 'Klaro', voice: s.voice, services: s.services, kind: s.kind || 'restaurant', url: s.url, greeting: s.greeting, testCall: s.call === 'completed' ? 'completed' : s.call === 'preview' ? 'preview' : 'none' };
+  }
+  sim(k, d) { return (this.props.sim && this.props.sim[k]) || d; }
   componentWillUnmount() { this.clearTimers(); stopSpeech(); clearTimeout(this.toastT); }
 
   later(fn, ms) { const t = setTimeout(fn, ms); this.timers.push(t); return t; }
@@ -65,7 +82,7 @@ export default class Flow extends Component {
   reset(over, cb) { this.clearTimers(); stopSpeech(); this.toTop(); this.setState(Object.assign({ saveOpen: false, protoOpen: false, playing: false }, over), cb); }
 
   runScan(from) {
-    const fails = this.state.simScan === 'fails';
+    const fails = this.sim('scan', 'success') === 'fails';
     let i = from || 0;
     const step = () => {
       if (fails && i >= 1) { this.later(() => this.setState({ gen: 'failed' }), 1400); return; }
@@ -78,7 +95,7 @@ export default class Flow extends Component {
   }
 
   runCall(from) {
-    const outcome = this.state.simCall;
+    const outcome = this.sim('call', 'answered');
     const go = (c, ms, next) => this.later(() => { this.setState({ call: c }); if (next) next(); }, ms);
     if (from === 'requesting') {
       if (outcome === 'fails') { go('failed', 1800); return; }
@@ -124,7 +141,7 @@ export default class Flow extends Component {
 
   jump(key) {
     const s = this.state;
-    const url = s.url || 'brightsideplumbing.co.uk';
+    const url = s.url || 'canalstreetkitchen.co.uk';
     const base = { url, call: 'idle', seconds: 0, summaryReady: false, scriptIdx: 0, previewDone: false };
     const callReady = { step: 'call', phone: s.phone || '7700 900123', consent: true };
     const filled = s.bizName ? {} : fill(kindFrom(url), url, false);
@@ -132,7 +149,7 @@ export default class Flow extends Component {
       scanning: () => this.reset({ ...base, ...fill(kindFrom(url), url, false), step: 'gen', gen: 'scanning', scanIdx: 0 }, () => this.runScan(0)),
       review: () => this.reset({ ...base, ...filled, step: 'gen', gen: 'review', scanIdx: 5 }),
       'scan-failed': () => this.reset({ ...base, step: 'gen', gen: 'failed', scanIdx: 1 }),
-      manual: () => this.reset({ ...base, ...fill('plumbing', '', true), url: '', step: 'gen', gen: 'manual' }),
+      manual: () => this.reset({ ...base, ...fill('restaurant', '', true), url: '', step: 'gen', gen: 'manual' }),
       call: () => this.reset({ ...base, ...filled, step: 'call' }),
       ringing: () => this.reset({ ...base, ...filled, ...callReady, call: 'ringing' }, () => this.runCall('ringing')),
       connected: () => this.reset({ ...base, ...filled, ...callReady, call: 'connected' }, () => this.runConnected()),
@@ -160,7 +177,7 @@ export default class Flow extends Component {
     const url = cleanUrl(s.url);
     this.reset({ ...fill(kindFrom(url), url, false), gen: 'scanning', scanIdx: 0, url }, () => this.runScan(0));
   }
-  startManual() { this.reset({ ...fill('plumbing', '', true), step: 'gen', gen: 'manual', url: '' }); }
+  startManual() { this.reset({ ...fill('restaurant', '', true), step: 'gen', gen: 'manual', url: '' }); }
   callMe() { this.clearTimers(); this.setState({ call: 'requesting', seconds: 0, summaryReady: false }, () => this.runCall('requesting')); }
   callAgain() { this.clearTimers(); stopSpeech(); this.setState({ call: 'idle', seconds: 0, summaryReady: false, scriptIdx: 0, previewDone: false }); }
   editNumber() { this.callAgain(); setTimeout(() => { const el = document.getElementById('kc-tel'); if (el) el.focus(); }, 60); }
@@ -173,7 +190,7 @@ export default class Flow extends Component {
   /* ---------- render ---------- */
   render() {
     const s = this.state;
-    const P = PRESETS[s.kind || 'plumbing'];
+    const P = PRESETS[s.kind || 'restaurant'];
     const siteLabel = cleanUrl(s.url) || 'your business';
     const kname = s.klaroName || 'Klaro';
     const bizNameOr = s.bizName || 'your business';
@@ -186,7 +203,6 @@ export default class Flow extends Component {
     const masked = s.cc + ' ' + (digits.length > 4 ? digits.replace(/^0/, '').slice(0, 4) + ' ••• ' + digits.slice(-3) : '•••');
     const factCount = s.facts.filter((f) => (f.v || '').trim()).length;
     const cannotHear = !(s.bizName || '').trim() || s.services.length === 0;
-    const reviewTools = !(typeof window !== 'undefined' && /[?&]clean=1/.test(window.location.search));
 
     /* generator preview */
     let genMood = 'welcome', bubbleLabel = 'Greeting', bubbleText = s.greeting, idSub = 'Your virtual receptionist · ' + voiceLabel;
@@ -227,7 +243,7 @@ export default class Flow extends Component {
     if (c === 'requesting') { callMood = 'thinking'; stageBig = 'Requesting your call…'; stageSmall = 'Nothing has rung yet.'; liveTitle = 'Requesting your call'; liveSub = 'This takes a few seconds. Your phone hasn’t rung yet.'; }
     if (c === 'dialling') { callMood = 'working'; stageBig = 'Dialling…'; stageSmall = 'Calling ' + ccPhone + '. It hasn’t connected yet.'; liveTitle = 'Dialling your number'; liveSub = 'Your phone should ring in a moment.'; }
     if (c === 'ringing') { callMood = 'listening'; showRings = true; stageBig = 'Your phone is ringing'; stageSmall = 'Answer it to talk to ' + kname + '. Not connected yet.'; liveTitle = 'Answer your phone'; liveSub = 'It’s ringing now from a Klaro Call number. Answer it to talk to ' + kname + '.'; }
-    if (c === 'connected') { callMood = s.talk; stagePill = 'Live demo call'; stagePillCls = 'live'; showTimer = true; showWave = true; waveCls = s.talk === 'listening' ? 'listen' : ''; stageBig = kname + (s.talk === 'speaking' ? ' is speaking' : ' is listening'); stageSmall = 'The transcript and summary appear when the call ends.'; liveTitle = 'You’re talking to ' + kname; liveSub = 'Play a customer. ' + kname + ' only uses what you approved.'; }
+    if (c === 'connected') { callMood = s.talk; stagePill = 'Demo call · simulated'; stagePillCls = 'live'; showTimer = true; showWave = true; waveCls = s.talk === 'listening' ? 'listen' : ''; stageBig = kname + (s.talk === 'speaking' ? ' is speaking' : ' is listening'); stageSmall = 'The transcript and summary appear when the call ends.'; liveTitle = 'You’re talking to ' + kname; liveSub = 'Play a customer. ' + kname + ' only uses what you approved.'; }
     if (c === 'completed') { callMood = 'success'; stagePill = 'Call ended'; showTimer = true; showWave = true; waveCls = 'still'; stageBig = 'Call completed'; stageSmall = s.summaryReady ? 'Summary ready.' : 'Writing your summary…'; }
     if (c === 'failed') { callMood = 'attention'; stagePill = 'Call not placed'; stagePillCls = 'bad'; stageBig = 'The call didn’t go through'; stageSmall = 'No call was made and nothing was recorded.'; }
     if (c === 'unanswered') { callMood = 'attention'; stagePill = 'No answer'; stagePillCls = 'warn'; stageBig = 'No answer'; stageSmall = kname + ' didn’t speak to anyone.'; }
@@ -254,12 +270,12 @@ export default class Flow extends Component {
     );
 
     return (
-      <div className={'kc' + (s.rm ? ' rm' : '')}>
+      <div className={'kc' + (this.props.motion === 'reduce' ? ' rm' : '')}>
         <header className="kc-top">
           <Brand onClick={(e) => { e.preventDefault(); this.props.onHome(); }} />
           <div className="kc-top-mid"><span className="kc-chip"><Icon name="globe" size="sm" /><span>{siteLabel}</span></span></div>
           <div className="kc-top-right">
-            <span className={'kc-pill ' + (onCall && c === 'connected' ? 'pill-live' : 'pill-demo')}><span className="dot" />{onGen ? 'Preview · not live' : c === 'connected' ? 'Live demo call' : 'Demo · not live'}</span>
+            <span className={'kc-pill ' + (onCall && c === 'connected' ? 'pill-live' : 'pill-demo')}><span className="dot" />{onGen ? 'Preview · not live' : c === 'connected' ? 'Demo call · simulated' : 'Demo · not live'}</span>
             {this.props.onToggleTheme && <ThemeToggle theme={this.props.theme} onToggle={this.props.onToggleTheme} />}
           </div>
         </header>
@@ -287,6 +303,7 @@ export default class Flow extends Component {
                   })}
                 </div>
                 <div className="kc-progress" aria-hidden="true"><i style={{ width: Math.round((s.scanIdx / 5) * 100) + '%' }} /></div>
+                <div className="sim-note" role="note"><Icon name="info" size="sm" /><span><b>Simulated scan.</b> This preview fills in sample details for a restaurant. A live build reads your real website.</span><Tag kind="demo" show={this.props.ann} /></div>
                 <div className="kc-meta"><span>Usually under a minute. You can edit everything next.</span><button className="link" onClick={() => this.startManual()}>Enter details myself</button></div>
               </>)}
 
@@ -306,6 +323,7 @@ export default class Flow extends Component {
                   <button className="btn btn-ghost" onClick={() => this.startManual()}>Enter details myself</button>
                 </div>
                 <p className="kc-fine">Entering details yourself takes about a minute: a name, what you do and your main services.</p>
+                <Tag kind="failure" show={this.props.ann} label="Failure → recovery: edits and the address are kept; retry or enter details manually" />
               </>)}
 
               {(s.gen === 'review' || s.gen === 'manual') && (<>
@@ -315,12 +333,12 @@ export default class Flow extends Component {
                   <p className="kc-sub">{s.gen === 'manual' ? 'Just the basics: a name, what you do and what people call about. You can add more later.' : 'Check the details callers will hear. Change only what matters. Everything else can wait.'}</p>
                 </div>
                 {s.gen === 'review' && (
-                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div><b>Found {2 + s.services.length + s.facts.length} details on your site.</b> Items marked <b>Check</b> are guesses. Confirm them before callers hear them.</div></div>
+                  <div className="kc-banner banner-ok" role="status"><span className="ico"><Icon name="check" size="sm" /></span><div><Tag kind="demo" show={this.props.ann} label="Sample details" /><b>Found {2 + s.services.length + s.facts.length} details on your site.</b> Items marked <b>Check</b> are guesses. Confirm them before callers hear them.</div></div>
                 )}
                 <div className="kc-form">
                   <div className="kc-field">
                     <label className="kc-label" htmlFor="kc-biz">Business name{s.gen === 'review' && <span className="kc-src">From your site</span>}</label>
-                    <input className="kc-input" id="kc-biz" type="text" placeholder="e.g. Brightside Plumbing" value={s.bizName} onChange={(e) => this.onBizName(e.target.value)} />
+                    <input className="kc-input" id="kc-biz" type="text" placeholder="e.g. Canal Street Kitchen" value={s.bizName} onChange={(e) => this.onBizName(e.target.value)} />
                   </div>
                   {s.gen === 'manual' && (
                     <div className="kc-field">
@@ -446,6 +464,7 @@ export default class Flow extends Component {
           <main className="kc-app">
             <div className="kc-panel">
               <div><button className="back" onClick={() => this.reset({ step: 'gen', gen: s.gen === 'manual' ? 'manual' : 'review', call: 'idle' })}><Icon name="back" size="sm" /><span>Edit {kname}</span></button></div>
+              <div className="sim-note" role="note"><Icon name="info" size="sm" /><span><b>Simulated in this preview.</b> No number is dialled, nothing is recorded and no one is charged. A live build shows these states only when the phone network reports them.</span><Tag kind="demo" show={this.props.ann} /></div>
 
               {c === 'idle' && (<>
                 <div>
@@ -485,7 +504,7 @@ export default class Flow extends Component {
                 <Timeline />
                 {c === 'connected' && (
                   <div className="kc-field"><span className="kc-label">Things to try</span>
-                    <div className="kc-tries"><span className="kc-try">"Can someone come Thursday morning?"</span><span className="kc-try">"How much is a call-out?"</span><span className="kc-try">"It's urgent, there's water everywhere."</span></div>
+                    <div className="kc-tries">{(TRIES[s.kind || 'restaurant'] || TRIES.restaurant).map((t) => <span key={t} className="kc-try">{t}</span>)}</div>
                   </div>
                 )}
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -510,7 +529,7 @@ export default class Flow extends Component {
                   <SummaryCard sum={P.sum} phone={masked} kname={kname} />
                 )}
                 <div className="kc-cta-bar">
-                  <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.setState({ saveOpen: true }); }}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>
+                  <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.clearTimers(); this.props.onSave && this.props.onSave(this.draft()); }}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>
                   <button className="btn btn-ghost btn-lg" onClick={() => this.callAgain()}>Call me again</button>
                 </div>
               </>)}
@@ -539,7 +558,7 @@ export default class Flow extends Component {
                   {shown.map((l, i) => (<div key={i} className={'kc-line ' + l.who}><small>{l.who === 'k' ? kname : 'Caller (sample)'}</small>{l.text}</div>))}
                 </div>
                 <div className="kc-cta-bar">
-                  {s.previewDone && <button className="btn btn-primary btn-lg" onClick={() => this.setState({ saveOpen: true })}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>}
+                  {s.previewDone && <button className="btn btn-primary btn-lg" onClick={() => { stopSpeech(); this.clearTimers(); this.props.onSave && this.props.onSave(this.draft()); }}>Save my Klaro<span className="arr"><Icon name="arrow" /></span></button>}
                   {!s.previewDone && <button className="btn btn-ghost btn-lg" onClick={() => { this.clearTimers(); stopSpeech(); this.setState({ previewDone: true, scriptIdx: this.script().length }); }}>Stop preview</button>}
                   <button className="btn btn-ghost btn-lg" onClick={() => this.editNumber()}>Call my phone instead</button>
                 </div>
@@ -566,42 +585,8 @@ export default class Flow extends Component {
           </main>
         )}
 
-        {s.saveOpen && (
-          <div className="kc-scrim" onClick={() => this.setState({ saveOpen: false })}>
-            <div className="kc-sheet" role="dialog" aria-modal="true" aria-labelledby="kc-save-t" onClick={(e) => e.stopPropagation()}>
-              <span className="kc-pill pill-live" style={{ alignSelf: 'flex-start' }}><span className="dot" />Draft kept</span>
-              <h3 id="kc-save-t">Save {kname} with your email</h3>
-              <p>Next we'll send a 6-digit code to your email. Your draft (name, services, greeting and this call's summary) stays exactly as it is.</p>
-              <div className="kc-draft"><span className="kc-avatar" style={{ width: 48, height: 48 }}><Klaro mood="success" size={44} decorative /></span><div><b>{kname} for {bizNameOr}</b><span className="sub">{s.services.length} services · {voiceLabel} · not live yet</span></div></div>
-              <div className="kc-banner banner-info"><span className="ico"><Icon name="info" size="sm" /></span><div><b>This preview ends here.</b> Screen 04 (account and email code) is the next review.</div></div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button className="btn btn-primary" onClick={() => this.props.onHome()}>Back to the homepage</button>
-                <button className="btn btn-ghost" onClick={() => this.setState({ saveOpen: false })}><span>Back to {kname}</span></button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {s.toast && <div className="kc-toast" role="status"><Icon name="info" size="sm" style={{ color: '#dfff75' }} />{s.toast}</div>}
 
-        {reviewTools && (
-          <div className="kc-proto">
-            {s.protoOpen && (
-              <div className="kc-proto-panel" role="dialog" aria-label="Review tools">
-                <h4>Jump to a state</h4>
-                <div className="kc-proto-grid">{JUMPS.map((j) => <button key={j[0]} onClick={() => this.jump(j[0])}>{j[1]}</button>)}</div>
-                <h4>Website scan result</h4>
-                <div className="kc-proto-grid">{[['success', 'Succeeds'], ['fails', 'Fails']].map((j) => <button key={j[0]} className={s.simScan === j[0] ? 'on' : ''} onClick={() => this.setState({ simScan: j[0] })}>{j[1]}</button>)}</div>
-                <h4>Demo call outcome</h4>
-                <div className="kc-proto-grid">{[['answered', 'Answered'], ['unanswered', 'No answer'], ['fails', 'Fails']].map((j) => <button key={j[0]} className={s.simCall === j[0] ? 'on' : ''} onClick={() => this.setState({ simCall: j[0] })}>{j[1]}</button>)}</div>
-                <h4>Motion</h4>
-                <div className="kc-proto-grid"><button className={s.rm ? 'on' : ''} onClick={() => this.setState({ rm: !s.rm })}>Reduced motion</button></div>
-                <p className="kc-proto-note">Review tools for this build, not product UI. Scan results, call progress and summaries are sample data and nothing is dialled. Add ?clean=1 to the URL to hide this.</p>
-              </div>
-            )}
-            <button className="kc-proto-btn" onClick={() => this.setState({ protoOpen: !s.protoOpen })} aria-expanded={s.protoOpen}><span className="dot" />Review tools</button>
-          </div>
-        )}
       </div>
     );
   }

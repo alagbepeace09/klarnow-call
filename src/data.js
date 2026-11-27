@@ -61,21 +61,21 @@ export const PRESETS = {
   },
   restaurant: {
     label: 'Food & hospitality',
-    desc: 'Neighbourhood restaurant serving seasonal plates, with private dining for groups.',
-    services: ['Table bookings', 'Private dining', 'Takeaway orders', 'Allergy questions'],
+    desc: 'Neighbourhood restaurant on Canal Street serving seasonal plates, with group tables and private dining.',
+    services: ['Table bookings', 'Group bookings', 'Private dining', 'Allergy questions'],
     facts: [
-      ['Opening hours', 'Wed–Sun 12:00–22:30', false],
-      ['Address', '48 Canal Street', false],
-      ['Large groups', '8+ need a deposit', true],
+      ['Opening hours', 'Tue–Sun 12:00–22:30', false],
+      ['Address', '48 Canal Street, Manchester', false],
+      ['Groups of 8+', 'Confirmed by the reservations team', true],
       ['Dietary', 'Vegan and gluten-free options', false]
     ],
     sum: {
-      customer: 'Chris Walsh',
-      enquiry: 'Table for 10 on Friday, one nut allergy',
-      details: ['Friday 19:30', '10 guests', 'Nut allergy noted'],
-      action: 'Checked hours and explained the deposit for groups',
-      outcome: 'Booking requested. Deposit needed before it is confirmed.',
-      follow: 'Confirm Friday 19:30 for 10 and send the deposit link.'
+      customer: 'Alex Morgan',
+      enquiry: 'Table for 8 on Friday at 7pm',
+      details: ['Party of 8', 'Friday 28 Nov, 19:00', 'Callback +44 7700 900 318'],
+      action: 'Passed to the reservations team. No table was booked on the call.',
+      outcome: 'Awaiting confirmation. Alex was told the team will confirm availability.',
+      follow: 'Check availability for Friday 19:00 and call Alex back.'
     }
   }
 };
@@ -84,8 +84,8 @@ export function kindFrom(url) {
   const u = (url || '').toLowerCase();
   if (/dent|smile|teeth|ortho/.test(u)) return 'dental';
   if (/salon|hair|beauty|braid|barber|nail/.test(u)) return 'salon';
-  if (/restaurant|kitchen|cafe|bistro|grill|food|eat/.test(u)) return 'restaurant';
-  return 'plumbing';
+  if (/plumb|heating|boiler|electric|build|trade/.test(u)) return 'plumbing';
+  return 'restaurant';
 }
 
 export function cleanUrl(url) {
@@ -100,7 +100,7 @@ export function nameFrom(url) {
   const s = cleanUrl(url).toLowerCase().split(/[/?#]/)[0];
   let base = s.split('.')[0] || '';
   if (!base) return '';
-  const words = ['plumbing', 'heating', 'dental', 'clinic', 'salon', 'hair', 'beauty', 'kitchen', 'cafe', 'restaurant', 'studio', 'solicitors', 'services', 'group', 'braids', 'barbers', 'smiles'];
+  const words = ['street', 'plumbing', 'heating', 'dental', 'clinic', 'salon', 'hair', 'beauty', 'kitchen', 'cafe', 'restaurant', 'studio', 'solicitors', 'services', 'group', 'braids', 'barbers', 'smiles'];
   base = base.replace(/[-_]+/g, ' ');
   words.forEach((w) => { base = base.replace(new RegExp('([a-z])(' + w + ')', 'g'), '$1 $2'); });
   return base.split(' ').filter(Boolean).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -112,16 +112,33 @@ export function greetingFor(name, kname) {
 
 export function sampleScript(bizName, klaroName, greeting, kind) {
   const n = bizName || 'your business';
-  const s = PRESETS[kind || 'plumbing'].sum;
+  const k = kind || 'restaurant';
+  if (k === 'restaurant') {
+    return [
+      { who: 'k', text: greeting || greetingFor(n, klaroName) },
+      { who: 'c', text: 'Hi, I’d like a table for eight this Friday at 7pm, please.' },
+      { who: 'k', text: 'Groups of eight are confirmed by our reservations team. Can I take your name and a number to call you back?' },
+      { who: 'c', text: 'Alex Morgan. It’s 07700 900318.' },
+      { who: 'k', text: 'Thanks Alex. I’ll pass that to the reservations team. They’ll confirm availability with you.' }
+    ];
+  }
+  const s = PRESETS[k].sum;
   const first = s.customer.split(' ')[0];
   return [
     { who: 'k', text: greeting || greetingFor(n, klaroName) },
     { who: 'c', text: 'Hi, ' + s.enquiry.charAt(0).toLowerCase() + s.enquiry.slice(1) + '.' },
     { who: 'k', text: 'I can help with that. Can I take your name and the best number to reach you?' },
     { who: 'c', text: first + '. This number is fine.' },
-    { who: 'k', text: 'Thanks ' + first + '. ' + s.action + '. I’ll pass this to the team at ' + n + ' to confirm, and they’ll text you.' }
+    { who: 'k', text: 'Thanks ' + first + '. ' + s.action + ' I’ll pass this to the team at ' + n + ' to confirm, and they’ll text you.' }
   ];
 }
+
+export const TRIES = {
+  restaurant: ['"Table for 8 on Friday at 7?"', '"Do you have vegan options?"', '"Can we bring a birthday cake?"'],
+  plumbing: ['"Can someone come Thursday morning?"', '"How much is a call-out?"', '"It\u2019s urgent, there\u2019s water everywhere."'],
+  dental: ['"Can I book a check-up?"', '"Are you taking new patients?"', '"I\u2019ve chipped a tooth."'],
+  salon: ['"Can I book braids for Saturday?"', '"Do you need a deposit?"', '"How long does colour take?"']
+};
 
 export function speak(text, voice, onEnd) {
   try {

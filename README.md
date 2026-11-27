@@ -29,3 +29,23 @@ npm run dev
 
 ## Deploy
 Connected to Vercel. Every push to `main` deploys. `vercel.json` rewrites routes to the SPA.
+
+## Handoff build: "Who sees what" (27 Nov 2026)
+
+One story runs through every screen: Alex Morgan calls Canal Street Kitchen at 18:10 on Wed 26 Nov and asks for a table for 8 on Friday at 19:00.
+
+| Route | Screen |
+| --- | --- |
+| `/` | 01 Landing (examples now use the restaurant story and say they are simulated) |
+| `/start?site=…`, `/start` | 02 Klaro Generator (website or manual entry, scan failure and recovery) |
+| `/start?state=call` | 03 Live Test Call (every call state is labelled simulated) |
+| `/save` | 04 Email and code (wrong code, expired code, resend, draft kept) |
+| `/app` | 05 Command Centre |
+| `/app/enquiries`, `?e=e1` | 07 Calls & Enquiries with the enquiry drawer (team view and what Alex heard) |
+| `/app/needs-you` | 08 Needs You (open, resolved, reopened) |
+| `/app/number`, `/app/studio` | 06 and 09 placeholders for the next review |
+
+- **Roles:** Owner/admin (Dami Ade, dami@canalstreetkitchen.co.uk) can assign and record outcomes. Member (Tolu Bello, tolu@…, Reservations) can only view, even when assigned. Switch from the header, the drawer or the review panel.
+- **Demo code:** 482913. No emails are sent and no calls are dialled.
+- **Review panel** (bottom right): jump to any screen, simulate scan/call/email/save outcomes, turn annotations and reduced motion on or off, reset the demo data. Add `?clean=1` to hide it.
+- **Annotations** (dock above the review button): for each screen, who can act, what input is needed, what record changes and where the next person sees it, plus state tags (demo, pending, live, failure, recovery) and product-review flags.

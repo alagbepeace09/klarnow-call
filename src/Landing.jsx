@@ -120,11 +120,12 @@ function Hero({ onStart }) {
         </div>
         <div className="hx-visual" aria-label="Example: Klaro handles a call from start to finish">
           <HeroKlaro size={520} id="hero">
-            <div className="kc-story s1"><span className="step">Call</span><span className="ico" style={{ background: 'none', padding: 0 }}><Ally shape="circle" tile="violet" size={38} radius={22} /></span><div><b>Incoming call · 07:42</b><span>You're on a job. Klaro picks up.</span></div></div>
-            <div className="kc-story s2"><span className="step">Enquiry</span><span className="ico"><Icon name="doc" /></span><div><b>Enquiry captured</b><span>Boiler losing pressure · M20 · wants Thursday</span></div></div>
-            <div className="kc-story s3"><span className="step">Action</span><span className="ico"><Icon name="calcheck" /></span><div><b>Visit requested</b><span>Thu 9:30 offered, waiting on you</span></div></div>
-            <div className="kc-story s4"><span className="step">You</span><span className="ico"><Icon name="bell" /></span><div><b>You're told straight away</b><span>Text + email to you · 07:44</span></div></div>
+            <div className="kc-story s1"><span className="step">Call</span><span className="ico" style={{ background: 'none', padding: 0 }}><Ally shape="circle" tile="violet" size={38} radius={22} /></span><div><b>Incoming call · 18:10</b><span>Dinner service is on. Klaro picks up.</span></div></div>
+            <div className="kc-story s2"><span className="step">Enquiry</span><span className="ico"><Icon name="doc" /></span><div><b>Enquiry captured</b><span>Alex Morgan · table for 8 · Fri 19:00</span></div></div>
+            <div className="kc-story s3"><span className="step">Action</span><span className="ico"><Icon name="calcheck" /></span><div><b>Passed to reservations</b><span>Nothing booked yet · awaiting confirmation</span></div></div>
+            <div className="kc-story s4"><span className="step">You</span><span className="ico"><Icon name="bell" /></span><div><b>Your team is told</b><span>Added to Needs You · 18:11</span></div></div>
           </HeroKlaro>
+          <span className="lp-example-tag">Example call · simulated</span>
         </div>
       </div>
       <a className="hx-ticker" href="#how" aria-label="How it works">
@@ -187,37 +188,37 @@ const KlaroAv = () => <span className="lp-av kd"><KlaroRender fallbackSize={34} 
 const CallerAv = ({ c = { shape: 'circle', tile: 'violet' } }) => <span className="lp-av"><Ally {...c} size={34} radius={10} /></span>;
 
 function PlatformVisual({ k }) {
-  const sum = PRESETS.plumbing.sum;
+  const sum = PRESETS.restaurant.sum;
   if (k === 0) return (
     <div className="pv-chat">
-      <div className="lp-line-row c"><CallerAv /><div className="kc-line c"><small>Caller</small>Do you cover Stockport?</div></div>
-      <div className="lp-line-row k"><KlaroAv /><div className="kc-line k"><small>Klaro</small>Yes, Manchester, Stockport and Trafford. Shall I book a visit?</div></div>
-      <div className="lp-line-row c"><CallerAv /><div className="kc-line c"><small>Caller</small>Can you fix it today?</div></div>
-      <div className="lp-line-row k"><KlaroAv /><div className="kc-line k"><small>Klaro</small>I can't promise same-day, but I'll flag it as urgent for the team now.</div></div>
+      <div className="lp-line-row c"><CallerAv /><div className="kc-line c"><small>Caller</small>Do you have vegan options?</div></div>
+      <div className="lp-line-row k"><KlaroAv /><div className="kc-line k"><small>Klaro</small>Yes, several vegan and gluten-free dishes. Would you like to book a table?</div></div>
+      <div className="lp-line-row c"><CallerAv /><div className="kc-line c"><small>Caller</small>Table for eight on Friday at 7?</div></div>
+      <div className="lp-line-row k"><KlaroAv /><div className="kc-line k"><small>Klaro</small>Groups of eight are confirmed by our reservations team. I’ll pass it on and they’ll call you back.</div></div>
     </div>
   );
   if (k === 1) return (
     <div className="pv-card">
-      <div className="pv-head"><Ally shape="drip" tile="lime" size={44} radius={12} /><div><b>{sum.customer}</b><span>+44 7700 ••• 123 · 07:42</span></div><span className="kc-pill pill-live"><span className="dot" />Captured</span></div>
+      <div className="pv-head"><Ally shape="drip" tile="lime" size={44} radius={12} /><div><b>{sum.customer}</b><span>+44 7700 ••• 318 · 18:10</span></div><span className="kc-pill pill-live"><span className="dot" />Captured</span></div>
       <div className="pv-row"><span className="lab">Enquiry</span><b>{sum.enquiry}</b></div>
       <div className="kc-kv">{sum.details.map((d) => <span key={d} className="kv">{d}</span>)}</div>
     </div>
   );
   if (k === 2) return (
     <div className="pv-card">
-      <div className="pv-step"><span className="c"><Icon name="check" size="sm" /></span><div><b>Visit requested · Thu 9:30</b><span>Earliest slot within your hours</span></div><span className="kc-pill pill-warn"><span className="dot" />Pending you</span></div>
-      <div className="pv-step"><span className="c"><Icon name="check" size="sm" /></span><div><b>Text sent to caller</b><span>"The team will confirm shortly"</span></div><span className="kc-pill pill-live"><span className="dot" />Done</span></div>
-      <div className="pv-step"><span className="c bad"><Icon name="close" size="sm" /></span><div><b>Calendar sync</b><span>Not connected yet</span></div><span className="kc-pill pill-err"><span className="dot" />Skipped</span></div>
+      <div className="pv-step"><span className="c"><Icon name="check" size="sm" /></span><div><b>Table for 8 · Fri 19:00</b><span>Passed to reservations, nothing booked yet</span></div><span className="kc-pill pill-warn"><span className="dot" />Awaiting confirmation</span></div>
+      <div className="pv-step"><span className="c"><Icon name="check" size="sm" /></span><div><b>Caller told what happens next</b><span>"The team will confirm availability with you"</span></div><span className="kc-pill pill-live"><span className="dot" />Done</span></div>
+      <div className="pv-step"><span className="c bad"><Icon name="close" size="sm" /></span><div><b>Booking system</b><span>Not connected, so Klaro didn’t book</span></div><span className="kc-pill pill-err"><span className="dot" />Unavailable</span></div>
     </div>
   );
   if (k === 3) return (
     <div className="pv-card">
-      <div className="pv-needs-h"><b>Needs you</b><span className="kc-pill pill-err"><span className="dot" />1 urgent</span></div>
-      <div className="lp-need urgent"><b>Priya Shah · leak under sink</b><span>Water spreading. Wants someone within 2 hours.</span><div className="lp-need-actions"><span className="btn btn-primary btn-sm">Call back</span><span className="btn btn-ghost btn-sm">Assign</span></div></div>
-      <div className="lp-need"><b>Sam Okafor · Thu 9:30</b><span>Confirm or move the requested visit.</span></div>
+      <div className="pv-needs-h"><b>Needs you</b><span className="kc-pill pill-warn"><span className="dot" />2 open</span></div>
+      <div className="lp-need urgent"><b>Alex Morgan · table for 8</b><span>Availability needs checking for Fri 19:00.</span><div className="lp-need-actions"><span className="btn btn-primary btn-sm">Call back</span><span className="btn btn-ghost btn-sm">Assign</span></div></div>
+      <div className="lp-need"><b>Grace Obi · private dining for 20</b><span>Deposit question needs a person.</span></div>
     </div>
   );
-  return <div className="pv-sum"><SummaryCard sum={sum} phone="+44 7700 ••• 123" kname="Klaro" demo={false} /></div>;
+  return <div className="pv-sum"><SummaryCard sum={sum} phone="+44 7700 ••• 318" kname="Klaro" demo /></div>;
 }
 
 function Platform() {
@@ -293,7 +294,7 @@ function HowItWorks({ onStart }) {
             <h3>Paste your website</h3>
             <p>Klaro reads your site and drafts what it knows: services, hours, area and contact details. You check anything it guessed.</p>
             <div className="lp-mock lp-mock-scan">
-              <div className="lp-mock-url"><Icon name="globe" size="sm" />brightsideplumbing.co.uk</div>
+              <div className="lp-mock-url"><Icon name="globe" size="sm" />canalstreetkitchen.co.uk</div>
               <div className="lp-mock-row done"><span className="c"><Icon name="check" size="sm" /></span>Finding your services<em>4 services</em></div>
               <div className="lp-mock-row done"><span className="c"><Icon name="check" size="sm" /></span>Opening hours and area<em>Found</em></div>
               <div className="lp-mock-row act"><span className="c spin" />Writing Klaro's greeting<em>Reading…</em></div>
@@ -330,7 +331,7 @@ function HowItWorks({ onStart }) {
 
 /* ---------- listen in (dark dot-matrix section) ---------- */
 function SampleCall() {
-  const lines = sampleScript('Brightside Plumbing', 'Klaro', '', 'plumbing');
+  const lines = sampleScript('Canal Street Kitchen', 'Klaro', '', 'restaurant');
   const [ref, seen] = useInView({ threshold: 0.3 });
   const [idx, setIdx] = useState(0);
   const [sound, setSound] = useState(false);
@@ -363,7 +364,7 @@ function SampleCall() {
               <p className="lp-lede">A real enquiry, handled from hello to next step. Klaro uses only what the business approved, says it's virtual and never promises what it can't do.</p>
             </div>
             <div className="dk-aside">
-              <p>A sample call to a plumbing business. Turn on sound to hear it in your browser's voice.</p>
+              <p>A simulated call to a restaurant. Nobody is dialled. Turn on sound to hear it in your browser's voice.</p>
               <button className="dk-link" onClick={() => { const n = !sound; setSound(n); if (!n) stopSpeech(); else setRun(run + 1); }} aria-pressed={sound}>{sound ? 'Sound on' : 'Play with sound'}<span><Icon name="speaker" size="sm" /></span></button>
             </div>
           </div>
@@ -380,15 +381,15 @@ function SampleCall() {
               {shown.map((l, i) => (
                 <div key={i} className={'lp-line-row ' + l.who}>
                   {l.who === 'k' ? <KlaroAv /> : <CallerAv />}
-                  <div className={'kc-line ' + l.who}><small>{l.who === 'k' ? 'Klaro' : 'Caller · Sam'}</small>{l.text}</div>
+                  <div className={'kc-line ' + l.who}><small>{l.who === 'k' ? 'Klaro' : 'Caller · Alex'}</small>{l.text}</div>
                 </div>
               ))}
               {done && (
                 <div className="lp-listen-sum">
-                  <span className="mono-label lime">Sent to the owner, 5 seconds later</span>
+                  <span className="mono-label lime">In the Command Centre, seconds later · example</span>
                   <div className="lp-mini-sum">
-                    <div><b>Sam Okafor</b><span>Boiler losing pressure · M20 2AB</span></div>
-                    <div className="kc-pill pill-live"><span className="dot" />Thu 9:30 requested</div>
+                    <div><b>Alex Morgan</b><span>Table for 8 · Fri 28 Nov, 19:00</span></div>
+                    <div className="kc-pill pill-warn"><span className="dot" />Awaiting confirmation</div>
                   </div>
                 </div>
               )}
@@ -427,11 +428,11 @@ function Outcomes() {
               ))}
             </div>
           </Reveal>
-          <Reveal className="ob-cell ob-sum" delay={120}><SummaryCard sum={PRESETS.plumbing.sum} phone="+44 7700 ••• 123" kname="Klaro" demo={false} /></Reveal>
+          <Reveal className="ob-cell ob-sum" delay={120}><SummaryCard sum={PRESETS.restaurant.sum} phone="+44 7700 ••• 318" kname="Klaro" demo /></Reveal>
           <Reveal className="ob-cell ob-ally" delay={180}><Ally shape="square" tile="lilac" size={96} radius={18} /><span>The first-timer</span></Reveal>
           <Reveal className="ob-cell ob-quote" delay={60}>
             <span className="mono-label">What lands on your phone</span>
-            <p>"Sam Okafor called at 07:42. Boiler losing pressure, M20. Thursday 9:30 requested. Confirm or move it."</p>
+            <p>"Alex Morgan called at 18:10. Table for 8, Friday 19:00. Not booked yet: check availability and call Alex back."</p>
             <div className="ob-chips"><span className="on">Text alert</span><span>Command Centre</span></div>
           </Reveal>
           <Reveal className="ob-cell ob-ally" delay={120}><Ally shape="circle" tile="amber" size={96} radius={18} /><span>The quick question</span></Reveal>
@@ -443,7 +444,7 @@ function Outcomes() {
 
 /* ---------- callers wall ---------- */
 function Callers() {
-  const said = { 1: 'Can you come Thursday?', 10: 'Do you take card?', 13: 'Table for 10?', 19: 'Are you open now?', 22: 'How much is it?' };
+  const said = { 1: 'Can I book Friday?', 10: 'Do you take card?', 13: 'Table for 8?', 19: 'Are you open now?', 22: 'How much is it?' };
   const tiles = ['violet', 'lime', 'lilac', 'amber', 'blush', 'mist'];
   const shapes = ['circle', 'drip', 'square', 'drop'];
   const cells = [];
@@ -480,10 +481,10 @@ function Callers() {
 /* ---------- command centre ---------- */
 function CommandCentre() {
   const calls = [
-    ['07:42', 'Sam Okafor', 'Boiler losing pressure', 'Visit requested', 'pill-warn'],
-    ['08:15', 'Unknown caller', 'Asked about call-out fee', 'Answered', 'pill-live'],
-    ['09:03', 'Priya Shah', 'Leak under sink, urgent', 'Needs you', 'pill-err'],
-    ['11:26', 'Ade Bakare', 'Quote for bathroom', 'Link sent', 'pill-live']
+    ['18:10', 'Alex Morgan', 'Table for 8 on Friday at 7pm', 'Awaiting confirmation', 'pill-warn'],
+    ['17:42', 'Unknown caller', 'Asked about vegan options', 'Answered', 'pill-live'],
+    ['17:05', 'Grace Obi', 'Private dining for 20', 'Needs you', 'pill-err'],
+    ['16:30', 'Ben Carter', 'Moved Thursday booking to 20:30', 'Done', 'pill-live']
   ];
   return (
     <section className="lp-section">
@@ -491,15 +492,15 @@ function CommandCentre() {
         <SecHead label="The command" accent="centre" title={<>Your day at a glance: <em>calls, enquiries and what needs you.</em></>} sub="Every call is linked to a customer, an enquiry, an action and an outcome. Search it, assign it, resolve it." />
         <Reveal className="lp-dash" delay={100}>
           <div className="lp-dash-top">
-            <div className="lp-dash-brand"><BrandMark /><b>Brightside Plumbing</b></div>
+            <div className="lp-dash-brand"><BrandMark /><b>Canal Street Kitchen</b></div>
             <div className="lp-dash-tabs" role="presentation"><span className="on">Today</span><span>Calls & enquiries</span><span>Needs you</span><span className="hide-sm">Klaro Studio</span></div>
-            <span className="kc-pill pill-live"><span className="dot" />Klaro live · 0161 •••• 412</span>
+            <span className="kc-pill pill-demo"><span className="dot" />Example workspace</span>
           </div>
           <div className="lp-dash-body">
             <div className="lp-dash-stats">
               <div><span>Calls answered</span><b>14</b><em>today</em></div>
-              <div><span>Enquiries captured</span><b>9</b><em>6 with an action</em></div>
-              <div><span>Waiting on you</span><b>2</b><em>1 urgent</em></div>
+              <div><span>Enquiries captured</span><b>9</b><em>3 awaiting confirmation</em></div>
+              <div><span>Waiting on you</span><b>2</b><em>1 high priority</em></div>
               <div><span>Avg. answer</span><b>1 ring</b><em>every call</em></div>
             </div>
             <div className="lp-dash-grid">
@@ -510,13 +511,13 @@ function CommandCentre() {
                 ))}
               </div>
               <div className="lp-dash-needs">
-                <div className="lp-dash-h">Needs you <span className="kc-pill pill-err" style={{ height: 22 }}>1 urgent</span></div>
-                <div className="lp-need urgent"><b>Priya Shah · leak under sink</b><span>Water spreading. Wants someone within 2 hours.</span><div className="lp-need-actions"><span className="btn btn-primary btn-sm">Call back</span><span className="btn btn-ghost btn-sm">Assign</span></div></div>
-                <div className="lp-need"><b>Sam Okafor · Thu 9:30</b><span>Confirm or move the requested visit.</span><div className="lp-need-actions"><span className="btn btn-ghost btn-sm">Confirm</span><span className="btn btn-ghost btn-sm">Move</span></div></div>
+                <div className="lp-dash-h">Needs you <span className="kc-pill pill-warn" style={{ height: 22 }}>2 open</span></div>
+                <div className="lp-need urgent"><b>Alex Morgan · table for 8</b><span>Availability needs checking for Fri 19:00.</span><div className="lp-need-actions"><span className="btn btn-primary btn-sm">Call back</span><span className="btn btn-ghost btn-sm">Assign</span></div></div>
+                <div className="lp-need"><b>Grace Obi · private dining for 20</b><span>Deposit question needs a person.</span><div className="lp-need-actions"><span className="btn btn-ghost btn-sm">Assign</span><span className="btn btn-ghost btn-sm">Resolve</span></div></div>
               </div>
             </div>
           </div>
-          <span className="lp-sample-tag">Sample data</span>
+          <span className="lp-sample-tag">Example · sample data</span>
         </Reveal>
       </div>
     </section>
@@ -526,10 +527,10 @@ function CommandCentre() {
 /* ---------- industries ---------- */
 function Industries() {
   const tabs = [
+    { k: 'restaurant', label: 'Restaurants', handles: ['Table and group bookings', 'Allergy and dietary questions', 'Opening hours and directions', 'Private dining enquiries'] },
     { k: 'plumbing', label: 'Trades', handles: ['Call-out and emergency questions', 'Visit requests with postcode and access notes', 'Quotes: photos requested by text', 'Urgent leaks flagged straight to you'] },
     { k: 'dental', label: 'Clinics', handles: ['New patient questions', 'Appointment requests and changes', 'Emergency triage to the right slot', 'Forms and directions sent by text'] },
-    { k: 'salon', label: 'Salons', handles: ['Service and price questions', 'Booking requests with stylist preference', 'Deposit and patch-test policy', 'Late and cancellation messages'] },
-    { k: 'restaurant', label: 'Restaurants', handles: ['Table and group bookings', 'Allergy and dietary questions', 'Opening hours and directions', 'Private dining enquiries'] }
+    { k: 'salon', label: 'Salons', handles: ['Service and price questions', 'Booking requests with stylist preference', 'Deposit and patch-test policy', 'Late and cancellation messages'] }
   ];
   const [on, setOn] = useState(0);
   const t = tabs[on];
